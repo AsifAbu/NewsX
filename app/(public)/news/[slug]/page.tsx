@@ -5,11 +5,8 @@ import { prisma } from "@/lib/db";
 import CommentForm from "@/components/CommentForm";
 import IncrementView from "@/components/IncrementView";
 import RejectForm from "@/components/RejectForm";
-import {
-  reportCommentAction,
-  deleteCommentAction,
-  toggleBookmarkAction,
-} from "@/lib/actions/engagement";
+import ReportCommentModal from "@/components/ReportCommentModal";
+import { deleteCommentAction, toggleBookmarkAction } from "@/lib/actions/engagement";
 import { approveNewsAction } from "@/lib/actions/news";
 
 export default async function NewsDetailsPage({
@@ -38,16 +35,24 @@ export default async function NewsDetailsPage({
     session?.user && (session.user.role === "ADMIN" || session.user.id === news.authorId);
   if (news.status !== "PUBLISHED" && !canPreview) notFound();
 
-  const isBookmarked = session?.user
-    ? Boolean(
-        await prisma.bookmark.findUnique({
-          where: { userId_newsId: { userId: session.user.id, newsId: news.id } },
-        })
-      )
-    : false;
+  const [isBookmarked, moreNews] = await Promise.all([
+    session?.user
+      ? prisma.bookmark
+          .findUnique({ where: { userId_newsId: { userId: session.user.id, newsId: news.id } } })
+          .then(Boolean)
+      : Promise.resolve(false),
+    // Same "Latest Updates" pool as the Dashboard — not scoped to this
+    // article's category — just excluding the article currently open.
+    prisma.news.findMany({
+      where: { status: "PUBLISHED", NOT: { id: news.id } },
+      orderBy: { publishedAt: "desc" },
+      take: 6,
+    }),
+  ]);
 
   return (
-    <article className="mx-auto max-w-3xl space-y-6">
+    <div className="grid gap-8 md:grid-cols-4">
+    <article className="space-y-6 md:col-span-3">
       <IncrementView newsId={news.id} />
 
       <p className="text-xs uppercase text-accent">{news.category.name}</p>
@@ -109,14 +114,12 @@ export default async function NewsDetailsPage({
 
         <ul className="space-y-4">
           {news.comments.map((c) => (
-            <li key={c.id} className="rounded border border-black/10 p-3 text-sm">
+            <li key={c.id} id={`comment-${c.id}`} className="scroll-mt-20 rounded border border-black/10 p-3 text-sm">
               <p className="font-medium">{c.user.name}</p>
               <p className="text-neutral-700">{c.body}</p>
               {session?.user && (
                 <div className="mt-1 flex gap-3 text-xs text-neutral-500">
-                  <form action={reportCommentAction.bind(null, c.id, news.slug)}>
-                    <button className="hover:text-accent">Report</button>
-                  </form>
+                  <ReportCommentModal commentId={c.id} slug={news.slug} />
                   {session.user.role === "ADMIN" && (
                     <form action={deleteCommentAction.bind(null, c.id, news.slug)}>
                       <button className="hover:text-accent">Delete</button>
@@ -129,5 +132,26 @@ export default async function NewsDetailsPage({
         </ul>
       </section>
     </article>
+
+    <aside>
+      <h2 className="font-headline text-xl font-bold">Read More</h2>
+      <ul className="mt-3 space-y-3">
+        {moreNews.map((n) => (
+          <li key={n.id} className="flex gap-3">
+            {n.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={n.imageUrl} alt={n.title} className="h-16 w-20 shrink-0 rounded object-cover" />
+            )}
+            <Link href={`/news/${n.slug}`} className="text-sm font-medium leading-snug hover:text-accent">
+              {n.title}
+            </Link>
+          </li>
+        ))}
+        {moreNews.length === 0 && (
+          <li className="text-sm text-neutral-500">No other articles in this category yet.</li>
+        )}
+      </ul>
+    </aside>
+    </div>
   );
 }

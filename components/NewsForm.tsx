@@ -9,6 +9,7 @@ import {
 } from "@/lib/actions/news";
 import { pullArticleAction } from "@/lib/actions/scrape";
 import { rephraseAction } from "@/lib/actions/rephrase";
+import ImageUpload from "@/components/ImageUpload";
 
 type Category = { id: string; name: string };
 
@@ -151,13 +152,8 @@ export default function NewsForm({
         className="w-full rounded border border-black/10 p-2 text-sm"
       />
 
-      <input
-        name="imageUrl"
-        value={imageUrl}
-        onChange={(e) => setImageUrl(e.target.value)}
-        placeholder="Image URL (Cloudinary)"
-        className="w-full rounded border border-black/10 p-2 text-sm"
-      />
+      <input type="hidden" name="imageUrl" value={imageUrl} />
+      <ImageUpload value={imageUrl} onChange={setImageUrl} />
 
       <textarea
         name="body"

@@ -23,6 +23,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
 
+        // Deactivated accounts can't log in. Generic failure (same as wrong
+        // password) rather than a specific message, so we don't leak account
+        // status to whoever is attempting the login.
+        if (user.deactivatedAt && user.deactivatedAt <= new Date()) return null;
+
         return { id: user.id, email: user.email, name: user.name, role: user.role };
       },
     }),

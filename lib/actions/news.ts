@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { newsSchema, rejectSchema } from "@/lib/validation/news";
 import { requireRole } from "@/lib/require-role";
+import { notifyAdmins, notifyUser } from "@/lib/notify";
 
 function slugify(title: string) {
   return (
@@ -34,7 +35,7 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
     redirect(`/post?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input.")}`);
   }
 
-  await prisma.news.create({
+  const created = await prisma.news.create({
     data: {
       title: parsed.data.title,
       slug: slugify(parsed.data.title),
@@ -47,6 +48,10 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
       publishedAt: status === "PUBLISHED" ? new Date() : null,
     },
   });
+
+  if (status === "PENDING") {
+    await notifyAdmins(`New submission: "${created.title}"`, "/approvals");
+  }
 
   revalidatePath("/");
   redirect(status === "DRAFT" ? "/my-submissions" : "/");
@@ -100,6 +105,10 @@ async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | 
     },
   });
 
+  if (status === "PENDING") {
+    await notifyAdmins(`Updated submission: "${parsed.data.title}"`, "/approvals");
+  }
+
   revalidatePath("/");
   revalidatePath(`/news/${existing.slug}`);
   revalidatePath("/approvals");
@@ -118,7 +127,7 @@ export async function updateNewsAction(
 export async function approveNewsAction(newsId: string) {
   const session = await requireRole(["ADMIN"]);
 
-  await prisma.$transaction([
+  const [updated] = await prisma.$transaction([
     prisma.news.update({
       where: { id: newsId },
       data: { status: "PUBLISHED", publishedAt: new Date(), rejectionReason: null },
@@ -127,6 +136,8 @@ export async function approveNewsAction(newsId: string) {
       data: { newsId, adminId: session.user.id, decision: "APPROVED" },
     }),
   ]);
+
+  await notifyUser(updated.authorId, `Your article "${updated.title}" was approved`, `/news/${updated.slug}`);
 
   revalidatePath("/approvals");
   revalidatePath("/");
@@ -144,7 +155,7 @@ export async function rejectNewsAction(
     return { error: parsed.error.issues[0]?.message ?? "A reason is required." };
   }
 
-  await prisma.$transaction([
+  const [updated] = await prisma.$transaction([
     prisma.news.update({
       where: { id: newsId },
       data: { status: "REJECTED", rejectionReason: parsed.data.reason },
@@ -153,6 +164,8 @@ export async function rejectNewsAction(
       data: { newsId, adminId: session.user.id, decision: "REJECTED", reason: parsed.data.reason },
     }),
   ]);
+
+  await notifyUser(updated.authorId, `Your article "${updated.title}" was rejected`, `/news/${updated.slug}`);
 
   revalidatePath("/approvals");
 }

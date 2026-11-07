@@ -1,0 +1,49 @@
+# NewsX — Dependency Manifest
+#
+# This is a Node.js project, not Python — this file is a human-readable list
+# for reference. The actual install source of truth is package.json /
+# package-lock.json; run `npm install` to install everything below.
+
+## Runtime (npm install <name>)
+@huggingface/transformers ^4.3.2   # runs the local ONNX paraphrase models (Rephrase feature)
+@mozilla/readability ^0.6.0        # article extraction for the Pull-from-link feature
+@prisma/adapter-pg ^7.10.1         # Prisma 7 requires an explicit driver adapter
+@prisma/client ^7.10.1
+bcryptjs ^3.0.3                    # password hashing
+cloudinary ^2.11.0                 # image upload (Node SDK)
+jsdom ^31.0.0                      # HTML parsing for the Pull-from-link feature
+next 16.4.5
+next-auth ^5.0.0-beta.32           # Auth.js v5 (not v4 — the npm "latest" tag resolves to v4)
+pg ^8.23.1                         # Postgres driver, used by @prisma/adapter-pg
+prisma ^7.10.1                     # CLI, pinned to stable 7.x (8.x is still a release candidate)
+react 19.3.0
+react-dom 19.3.0
+zod ^4.6.7                         # form/action input validation
+
+## Dev dependencies (npm install -D <name>)
+@tailwindcss/turbopack ^4
+@types/jsdom ^30.0.0
+@types/node ^20
+@types/pg ^8.23.1
+@types/react ^19
+@types/react-dom ^19
+eslint ^9
+eslint-config-next 16.4.5
+tailwindcss ^4
+tsx ^4.23.15                       # runs prisma/seed.ts and other one-off TS scripts
+typescript ^5
+
+## One-time Python tooling (NOT needed to run the app — only to regenerate
+## the local ONNX paraphrase models in models/paraphrase-en and
+## models/paraphrase-bn, which are gitignored and not part of the repo)
+# Python 3.12 (newer versions may lack prebuilt onnxruntime wheels)
+optimum-onnx                       # pip install optimum-onnx
+onnxruntime                        # pip install onnxruntime
+sentencepiece                      # pip install sentencepiece (BanglaT5 tokenizer)
+# `optimum`, `transformers`, and `torch` are pulled in automatically as
+# dependencies of optimum-onnx. See docs/RULES.md for the exact conversion
+# steps if these models ever need to be regenerated.
+
+## External services (no package to install — accounts + API keys)
+# Neon (Postgres) — DATABASE_URL
+# Cloudinary — CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET

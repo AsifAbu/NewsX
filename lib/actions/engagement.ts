@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireRole, requireSession } from "@/lib/require-role";
 import { commentSchema } from "@/lib/validation/comment";
+import { notifyAdmins } from "@/lib/notify";
 
 export type CommentActionState = { error?: string } | undefined;
 
@@ -27,16 +28,36 @@ export async function addCommentAction(
   revalidatePath(`/news/${slug}`);
 }
 
-export async function reportCommentAction(commentId: string, slug: string) {
-  await requireSession();
-  await prisma.comment.update({ where: { id: commentId }, data: { status: "REPORTED" } });
+export async function reportCommentAction(
+  commentId: string,
+  slug: string,
+  _prevState: CommentActionState,
+  formData: FormData
+) {
+  const session = await requireSession();
+  const reason = (formData.get("reason") as string | null)?.trim();
+  if (!reason) {
+    return { error: "Please say why you're reporting this comment." };
+  }
+
+  await prisma.report.create({ data: { commentId, reporterId: session.user.id, reason } });
+  await notifyAdmins("A comment was reported", "/reports");
   revalidatePath(`/news/${slug}`);
+  revalidatePath("/reports");
 }
 
 export async function deleteCommentAction(commentId: string, slug: string) {
   await requireRole(["ADMIN"]);
+  await prisma.report.deleteMany({ where: { commentId } });
   await prisma.comment.delete({ where: { id: commentId } });
   revalidatePath(`/news/${slug}`);
+  revalidatePath("/reports");
+}
+
+export async function dismissReportsAction(commentId: string) {
+  await requireRole(["ADMIN"]);
+  await prisma.report.deleteMany({ where: { commentId } });
+  revalidatePath("/reports");
 }
 
 export async function toggleBookmarkAction(newsId: string, slug: string) {

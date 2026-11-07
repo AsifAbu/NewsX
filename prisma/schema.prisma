@@ -27,7 +27,6 @@ enum NewsStatus {
 
 enum CommentStatus {
   VISIBLE
-  REPORTED
   REMOVED
 }
 
@@ -45,13 +44,33 @@ model User {
   avatarUrl              String?
   // Simple scalar list for MVP (no join table) — category ids the user follows
   interestedCategoryIds  String[] @default([])
+  // Set by an Admin via the Deactivate dialog; null = active. Can be a future
+  // timestamp (deactivation takes effect at next login after that moment) or
+  // now/past (effective immediately). No background job needed — enforced
+  // on-demand in the auth check.
+  deactivatedAt          DateTime?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  news         News[]        @relation("NewsAuthor")
-  comments     Comment[]
-  bookmarks    Bookmark[]
-  approvalLogs ApprovalLog[] @relation("ApprovalAdmin")
+  news          News[]         @relation("NewsAuthor")
+  comments      Comment[]
+  bookmarks     Bookmark[]
+  approvalLogs  ApprovalLog[]  @relation("ApprovalAdmin")
+  reports       Report[]       @relation("Reporter")
+  notifications Notification[]
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  message   String
+  link      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
 }
 
 model Category {
@@ -99,7 +118,23 @@ model Comment {
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
+  reports Report[]
+
   @@index([newsId])
+}
+
+// A comment's "reported" state is derived from whether it has any Report
+// rows (see `reports: { some: {} }` queries) — not duplicated as a status
+// flag on Comment, so there's one source of truth.
+model Report {
+  id        String   @id @default(cuid())
+  reason    String?
+  createdAt DateTime @default(now())
+
+  commentId  String
+  comment    Comment @relation(fields: [commentId], references: [id])
+  reporterId String
+  reporter   User    @relation("Reporter", fields: [reporterId], references: [id])
 }
 
 model Bookmark {

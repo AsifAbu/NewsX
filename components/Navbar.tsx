@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { logoutAction } from "@/lib/actions/auth";
+import NotificationBell from "@/components/NotificationBell";
+import UserMenu from "@/components/UserMenu";
 
 // Free, keyless weather API (Open-Meteo). Default location is a placeholder
 // (Dhaka) — not in the original BRD/SRS; swap coordinates or wire up
@@ -37,10 +38,21 @@ async function getWeather() {
 }
 
 export default async function Navbar() {
-  const [session, categories, weather] = await Promise.all([
-    auth(),
+  const session = await auth();
+
+  const [categories, weather, notifications, unreadCount] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: "asc" } }),
     getWeather(),
+    session?.user
+      ? prisma.notification.findMany({
+          where: { userId: session.user.id },
+          orderBy: { createdAt: "desc" },
+          take: 15,
+        })
+      : Promise.resolve([]),
+    session?.user
+      ? prisma.notification.count({ where: { userId: session.user.id, isRead: false } })
+      : Promise.resolve(0),
   ]);
 
   const today = new Date().toLocaleDateString("en-US", {
@@ -67,63 +79,61 @@ export default async function Navbar() {
         </div>
       </div>
 
-      {/* Row 2: categories + search + login */}
+      {/* Row 2: categories + search (3/4 width) | notifications + user (1/4 width) —
+          same grid-cols-4 split as the content pages, so both align vertically. */}
       <div className="border-t border-black/10">
-        <div className="mx-auto flex max-w-6xl items-center gap-5 px-4 py-2">
-          <nav className="flex flex-1 gap-4 overflow-x-auto">
-            <Link href="/" className="whitespace-nowrap text-sm font-medium text-neutral-700 hover:text-accent">
-              Latest
-            </Link>
-            {categories.map((c) => (
-              <Link
-                key={c.id}
-                href={`/?category=${c.id}`}
-                className="whitespace-nowrap text-sm font-medium text-neutral-700 hover:text-accent"
-              >
-                {c.name}
+        <div className="mx-auto grid max-w-6xl grid-cols-4 items-center gap-5 px-4 py-2">
+          <div className="col-span-3 flex items-center gap-4">
+            <nav className="flex flex-1 gap-4 overflow-x-auto">
+              <Link href="/" className="whitespace-nowrap text-sm font-medium text-neutral-700 hover:text-accent">
+                Latest
               </Link>
-            ))}
-          </nav>
+              {categories.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/?category=${c.id}`}
+                  className="whitespace-nowrap text-sm font-medium text-neutral-700 hover:text-accent"
+                >
+                  {c.name}
+                </Link>
+              ))}
+            </nav>
 
-          <form action="/search" className="hidden items-center sm:flex">
-            <input
-              name="q"
-              placeholder="Search"
-              className="w-40 rounded-l border border-r-0 border-black/10 px-2 py-1 text-sm"
-            />
-            <button
-              type="submit"
-              aria-label="Search"
-              className="rounded-r border border-black/10 bg-neutral-50 px-2 py-1 text-sm hover:text-accent"
-            >
-              🔍
-            </button>
-          </form>
+            <form action="/search" className="hidden items-center sm:flex">
+              <input
+                name="q"
+                placeholder="Search"
+                className="w-40 rounded-l border border-r-0 border-black/10 px-2 py-1 text-sm"
+              />
+              <button
+                type="submit"
+                aria-label="Search"
+                className="rounded-r border border-black/10 bg-neutral-50 px-2 py-1 text-sm hover:text-accent"
+              >
+                🔍
+              </button>
+            </form>
+          </div>
 
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center justify-end gap-3 text-sm">
             {session?.user ? (
               <>
-                {(session.user.role === "MODERATOR" || session.user.role === "ADMIN") && (
-                  <Link href="/post" className="hover:text-accent">
-                    Write
-                  </Link>
-                )}
-                {session.user.role === "ADMIN" && (
-                  <Link href="/approvals" className="hover:text-accent">
-                    Approvals
-                  </Link>
-                )}
-                <span className="whitespace-nowrap text-neutral-600">{session.user.name}</span>
-                <form action={logoutAction}>
-                  <button className="hover:text-accent" type="submit">
-                    Logout
-                  </button>
-                </form>
+                <NotificationBell
+                  notifications={notifications.map((n) => ({
+                    id: n.id,
+                    message: n.message,
+                    link: n.link,
+                    isRead: n.isRead,
+                    createdAt: n.createdAt.toISOString(),
+                  }))}
+                  unreadCount={unreadCount}
+                />
+                <UserMenu name={session.user.name ?? ""} role={session.user.role} />
               </>
             ) : (
               <Link
                 href="/login"
-                className="whitespace-nowrap rounded bg-accent px-3 py-1.5 text-white hover:opacity-90"
+                className="ml-auto whitespace-nowrap rounded bg-accent px-3 py-1.5 text-white hover:opacity-90"
               >
                 Login
               </Link>
