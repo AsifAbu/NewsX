@@ -64,6 +64,57 @@ export async function publishDirectlyAction(formData: FormData) {
   return saveNews(formData, "PUBLISHED");
 }
 
+async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | "PENDING" | "PUBLISHED") {
+  const session = await requireRole(["MODERATOR", "ADMIN"]);
+
+  const existing = await prisma.news.findUnique({ where: { id: newsId } });
+  if (!existing) {
+    redirect("/post?error=That article no longer exists.");
+  }
+  if (session.user.role !== "ADMIN" && existing.authorId !== session.user.id) {
+    redirect("/post?error=You can only edit your own submissions.");
+  }
+
+  const parsed = newsSchema.safeParse({
+    title: formData.get("title"),
+    categoryId: formData.get("categoryId"),
+    body: formData.get("body"),
+    imageUrl: formData.get("imageUrl") ?? "",
+    sourceUrl: formData.get("sourceUrl") ?? "",
+  });
+  if (!parsed.success) {
+    redirect(`/post?edit=${newsId}&error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input.")}`);
+  }
+
+  await prisma.news.update({
+    where: { id: newsId },
+    data: {
+      title: parsed.data.title,
+      body: parsed.data.body,
+      imageUrl: parsed.data.imageUrl || null,
+      sourceUrl: parsed.data.sourceUrl || null,
+      categoryId: parsed.data.categoryId,
+      status,
+      rejectionReason: null,
+      publishedAt: status === "PUBLISHED" ? (existing.publishedAt ?? new Date()) : existing.publishedAt,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/news/${existing.slug}`);
+  revalidatePath("/approvals");
+  revalidatePath("/my-submissions");
+  redirect(status === "DRAFT" ? "/my-submissions" : `/news/${existing.slug}`);
+}
+
+export async function updateNewsAction(
+  newsId: string,
+  status: "DRAFT" | "PENDING" | "PUBLISHED",
+  formData: FormData
+) {
+  return updateNews(newsId, formData, status);
+}
+
 export async function approveNewsAction(newsId: string) {
   const session = await requireRole(["ADMIN"]);
 

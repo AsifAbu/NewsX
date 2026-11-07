@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import CommentForm from "@/components/CommentForm";
@@ -50,7 +51,17 @@ export default async function NewsDetailsPage({
       <IncrementView newsId={news.id} />
 
       <p className="text-xs uppercase text-accent">{news.category.name}</p>
-      <h1 className="font-headline text-3xl font-bold leading-tight">{news.title}</h1>
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="font-headline text-3xl font-bold leading-tight">{news.title}</h1>
+        {canPreview && (
+          <Link
+            href={`/post?edit=${news.id}`}
+            className="shrink-0 rounded border border-black/10 px-3 py-1.5 text-sm hover:border-accent hover:text-accent"
+          >
+            Edit
+          </Link>
+        )}
+      </div>
       <p className="text-sm text-neutral-500">
         By {news.author.name} ·{" "}
         {news.publishedAt?.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}

@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveDraftAction, submitForApprovalAction, publishDirectlyAction } from "@/lib/actions/news";
+import {
+  saveDraftAction,
+  submitForApprovalAction,
+  publishDirectlyAction,
+  updateNewsAction,
+} from "@/lib/actions/news";
 import { pullArticleAction } from "@/lib/actions/scrape";
 import { rephraseAction } from "@/lib/actions/rephrase";
 
@@ -11,16 +16,29 @@ export default function NewsForm({
   categories,
   isAdmin,
   error,
+  newsId,
+  initialTitle = "",
+  initialCategoryId = "",
+  initialImageUrl = "",
+  initialBody = "",
+  initialSourceUrl = "",
 }: {
   categories: Category[];
   isAdmin: boolean;
   error?: string;
+  newsId?: string;
+  initialTitle?: string;
+  initialCategoryId?: string;
+  initialImageUrl?: string;
+  initialBody?: string;
+  initialSourceUrl?: string;
 }) {
-  const [useLink, setUseLink] = useState(false);
-  const [link, setLink] = useState("");
-  const [title, setTitle] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [body, setBody] = useState("");
+  const isEditing = Boolean(newsId);
+  const [useLink, setUseLink] = useState(Boolean(initialSourceUrl));
+  const [link, setLink] = useState(initialSourceUrl);
+  const [title, setTitle] = useState(initialTitle);
+  const [imageUrl, setImageUrl] = useState(initialImageUrl);
+  const [body, setBody] = useState(initialBody);
   const [pullError, setPullError] = useState("");
   const [rephraseError, setRephraseError] = useState("");
   const [isPulling, startPulling] = useTransition();
@@ -52,12 +70,25 @@ export default function NewsForm({
     });
   }
 
+  const draftAction = isEditing ? updateNewsAction.bind(null, newsId!, "DRAFT") : saveDraftAction;
+  const submitAction = isEditing
+    ? updateNewsAction.bind(null, newsId!, "PENDING")
+    : submitForApprovalAction;
+  const publishAction = isEditing
+    ? updateNewsAction.bind(null, newsId!, "PUBLISHED")
+    : publishDirectlyAction;
+
   return (
-    <form action={saveDraftAction} className="mx-auto max-w-2xl space-y-3">
-      <h1 className="font-headline text-2xl font-bold">Write News</h1>
+    <form action={draftAction} className="mx-auto max-w-2xl space-y-3">
+      <h1 className="font-headline text-2xl font-bold">{isEditing ? "Edit News" : "Write News"}</h1>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <select name="categoryId" required className="w-full rounded border border-black/10 p-2 text-sm">
+      <select
+        name="categoryId"
+        required
+        defaultValue={initialCategoryId}
+        className="w-full rounded border border-black/10 p-2 text-sm"
+      >
         <option value="">Select a category</option>
         {categories.map((c) => (
           <option key={c.id} value={c.id}>
@@ -161,7 +192,7 @@ export default function NewsForm({
         </button>
         <button
           type="submit"
-          formAction={submitForApprovalAction}
+          formAction={submitAction}
           className="rounded bg-accent px-3 py-2 text-sm text-white hover:opacity-90"
         >
           Submit for Approval
@@ -169,7 +200,7 @@ export default function NewsForm({
         {isAdmin && (
           <button
             type="submit"
-            formAction={publishDirectlyAction}
+            formAction={publishAction}
             className="rounded bg-black px-3 py-2 text-sm text-white hover:opacity-90"
           >
             Publish
