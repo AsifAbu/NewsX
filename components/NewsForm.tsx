@@ -19,7 +19,7 @@ export default function NewsForm({
   error,
   newsId,
   initialTitle = "",
-  initialCategoryId = "",
+  initialCategoryIds = [],
   initialImageUrl = "",
   initialBody = "",
   initialSourceUrl = "",
@@ -29,7 +29,7 @@ export default function NewsForm({
   error?: string;
   newsId?: string;
   initialTitle?: string;
-  initialCategoryId?: string;
+  initialCategoryIds?: string[];
   initialImageUrl?: string;
   initialBody?: string;
   initialSourceUrl?: string;
@@ -84,19 +84,22 @@ export default function NewsForm({
       <h1 className="font-headline text-2xl font-bold">{isEditing ? "Edit News" : "Write News"}</h1>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <select
-        name="categoryId"
-        required
-        defaultValue={initialCategoryId}
-        className="w-full rounded border border-black/10 p-2 text-sm"
-      >
-        <option value="">Select a category</option>
-        {categories.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
+      <fieldset className="rounded border border-black/10 p-2">
+        <legend className="px-1 text-xs text-neutral-500">Categories (select one or more)</legend>
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {categories.map((c) => (
+            <label key={c.id} className="flex items-center gap-1.5 text-sm">
+              <input
+                type="checkbox"
+                name="categoryIds"
+                value={c.id}
+                defaultChecked={initialCategoryIds.includes(c.id)}
+              />
+              {c.name}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <div className="flex w-fit items-center gap-2 text-sm">
         <button

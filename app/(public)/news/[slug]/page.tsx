@@ -6,8 +6,10 @@ import CommentForm from "@/components/CommentForm";
 import IncrementView from "@/components/IncrementView";
 import RejectForm from "@/components/RejectForm";
 import ReportCommentModal from "@/components/ReportCommentModal";
+import SummarizeToggle from "@/components/SummarizeToggle";
 import { deleteCommentAction, toggleBookmarkAction } from "@/lib/actions/engagement";
 import { approveNewsAction } from "@/lib/actions/news";
+import { timeAgo } from "@/lib/format";
 
 export default async function NewsDetailsPage({
   params,
@@ -20,7 +22,7 @@ export default async function NewsDetailsPage({
   const news = await prisma.news.findUnique({
     where: { slug },
     include: {
-      category: true,
+      categories: true,
       author: true,
       comments: {
         where: { status: { not: "REMOVED" } },
@@ -51,11 +53,11 @@ export default async function NewsDetailsPage({
   ]);
 
   return (
-    <div className="grid gap-8 md:grid-cols-4">
-    <article className="space-y-6 md:col-span-3">
+    <div className="grid gap-8 md:grid-cols-5">
+    <article className="space-y-6 md:col-span-4">
       <IncrementView newsId={news.id} />
 
-      <p className="text-xs uppercase text-accent">{news.category.name}</p>
+      <p className="text-xs uppercase text-accent">{news.categories.map((c) => c.name).join(", ")}</p>
       <div className="flex items-start justify-between gap-4">
         <h1 className="font-headline text-3xl font-bold leading-tight">{news.title}</h1>
         {canPreview && (
@@ -76,7 +78,11 @@ export default async function NewsDetailsPage({
 
       {news.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={news.imageUrl} alt={news.title} className="w-full rounded-lg object-cover" />
+        <img
+          src={news.imageUrl}
+          alt={news.title}
+          className="h-96 w-full rounded-lg bg-neutral-100 object-contain"
+        />
       )}
 
       {session?.user?.role === "ADMIN" && news.status === "PENDING" && (
@@ -93,15 +99,15 @@ export default async function NewsDetailsPage({
         </div>
       )}
 
-      {session?.user && (
-        <form action={toggleBookmarkAction.bind(null, news.id, news.slug)}>
-          <button className="rounded border border-black/10 px-3 py-1.5 text-sm hover:border-accent hover:text-accent">
-            {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
-          </button>
-        </form>
-      )}
-
-      <div className="prose max-w-none whitespace-pre-wrap text-neutral-800">{news.body}</div>
+      <SummarizeToggle body={news.body}>
+        {session?.user && (
+          <form action={toggleBookmarkAction.bind(null, news.id, news.slug)}>
+            <button className="rounded border border-black/10 px-3 py-1.5 text-sm hover:border-accent hover:text-accent">
+              {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
+            </button>
+          </form>
+        )}
+      </SummarizeToggle>
 
       <section className="space-y-4 border-t border-black/10 pt-6">
         <h2 className="font-headline text-xl font-bold">Comments</h2>
@@ -135,22 +141,34 @@ export default async function NewsDetailsPage({
 
     <aside>
       <h2 className="font-headline text-xl font-bold">Read More</h2>
-      <ul className="mt-3 space-y-3">
+      <ul className="mt-3 divide-y divide-black/10">
         {moreNews.map((n) => (
-          <li key={n.id} className="flex gap-3">
+          <li key={n.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
             {n.imageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={n.imageUrl} alt={n.title} className="h-16 w-20 shrink-0 rounded object-cover" />
+              <img
+                src={n.imageUrl}
+                alt={n.title}
+                className="h-16 w-20 shrink-0 rounded bg-neutral-100 object-contain"
+              />
             )}
-            <Link href={`/news/${n.slug}`} className="text-sm font-medium leading-snug hover:text-accent">
-              {n.title}
-            </Link>
+            <div>
+              <Link href={`/news/${n.slug}`} className="text-sm font-medium leading-snug hover:text-accent">
+                {n.title}
+              </Link>
+              <p className="mt-1 text-xs text-neutral-400">{timeAgo(n.publishedAt)}</p>
+            </div>
           </li>
         ))}
         {moreNews.length === 0 && (
           <li className="text-sm text-neutral-500">No other articles in this category yet.</li>
         )}
       </ul>
+      <div className="mt-3 flex justify-end">
+        <Link href="/" className="text-sm font-medium text-accent hover:underline">
+          More..
+        </Link>
+      </div>
     </aside>
     </div>
   );

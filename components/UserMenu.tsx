@@ -29,6 +29,9 @@ export default function UserMenu({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-black/10 bg-white py-1 shadow-lg">
+            <Link href="/bookmarks" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-50">
+              Bookmarks
+            </Link>
             {canWrite && (
               <Link href="/post" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-50">
                 Write

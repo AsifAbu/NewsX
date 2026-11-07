@@ -26,7 +26,7 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
 
   const parsed = newsSchema.safeParse({
     title: formData.get("title"),
-    categoryId: formData.get("categoryId"),
+    categoryIds: formData.getAll("categoryIds"),
     body: formData.get("body"),
     imageUrl: formData.get("imageUrl") ?? "",
     sourceUrl: formData.get("sourceUrl") ?? "",
@@ -42,7 +42,7 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
       body: parsed.data.body,
       imageUrl: parsed.data.imageUrl || null,
       sourceUrl: parsed.data.sourceUrl || null,
-      categoryId: parsed.data.categoryId,
+      categories: { connect: parsed.data.categoryIds.map((id) => ({ id })) },
       authorId: session.user.id,
       status,
       publishedAt: status === "PUBLISHED" ? new Date() : null,
@@ -82,7 +82,7 @@ async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | 
 
   const parsed = newsSchema.safeParse({
     title: formData.get("title"),
-    categoryId: formData.get("categoryId"),
+    categoryIds: formData.getAll("categoryIds"),
     body: formData.get("body"),
     imageUrl: formData.get("imageUrl") ?? "",
     sourceUrl: formData.get("sourceUrl") ?? "",
@@ -98,7 +98,7 @@ async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | 
       body: parsed.data.body,
       imageUrl: parsed.data.imageUrl || null,
       sourceUrl: parsed.data.sourceUrl || null,
-      categoryId: parsed.data.categoryId,
+      categories: { set: parsed.data.categoryIds.map((id) => ({ id })) },
       status,
       rejectionReason: null,
       publishedAt: status === "PUBLISHED" ? (existing.publishedAt ?? new Date()) : existing.publishedAt,

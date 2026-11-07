@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import MobileNav from "@/components/MobileNav";
+import NavLinks from "@/components/NavLinks";
 import NotificationBell from "@/components/NotificationBell";
 import UserMenu from "@/components/UserMenu";
 
@@ -63,9 +65,9 @@ export default async function Navbar() {
   });
 
   return (
-    <header className="border-b border-black/10 bg-white">
+    <header className="relative border-b border-black/10 bg-white">
       {/* Row 1: logo + date/weather */}
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-4 py-3">
         <Link href="/" className="font-headline text-2xl font-bold">
           News<span className="text-accent">X</span>
         </Link>
@@ -79,27 +81,21 @@ export default async function Navbar() {
         </div>
       </div>
 
-      {/* Row 2: categories + search (3/4 width) | notifications + user (1/4 width) —
-          same grid-cols-4 split as the content pages, so both align vertically. */}
+      {/* Row 2: categories + search (4/5 width) | notifications + user (1/5 width) —
+          same grid-cols-5 split as the content pages, so both align vertically.
+          Below md, this collapses to a burger button (MobileNav) + the
+          notifications/user cluster, with nav links and search moving into
+          MobileNav's dropdown panel. */}
       <div className="border-t border-black/10">
-        <div className="mx-auto grid max-w-6xl grid-cols-4 items-center gap-5 px-4 py-2">
-          <div className="col-span-3 flex items-center gap-4">
-            <nav className="flex flex-1 gap-4 overflow-x-auto">
-              <Link href="/" className="whitespace-nowrap text-sm font-medium text-neutral-700 hover:text-accent">
-                Latest
-              </Link>
-              {categories.map((c) => (
-                <Link
-                  key={c.id}
-                  href={`/?category=${c.id}`}
-                  className="whitespace-nowrap text-sm font-medium text-neutral-700 hover:text-accent"
-                >
-                  {c.name}
-                </Link>
-              ))}
+        <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-3 px-4 py-2 md:grid md:grid-cols-5 md:gap-5">
+          <div className="flex items-center gap-4 md:col-span-4">
+            <MobileNav categories={categories} />
+
+            <nav className="hidden flex-1 gap-4 overflow-x-auto md:flex">
+              <NavLinks categories={categories} />
             </nav>
 
-            <form action="/search" className="hidden items-center sm:flex">
+            <form action="/search" className="hidden items-center md:flex">
               <input
                 name="q"
                 placeholder="Search"

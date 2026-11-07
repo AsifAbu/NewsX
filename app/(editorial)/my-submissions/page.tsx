@@ -8,7 +8,7 @@ export default async function MySubmissionsPage() {
   const submissions = await prisma.news.findMany({
     where: { authorId: session.user.id },
     orderBy: { createdAt: "desc" },
-    include: { category: true },
+    include: { categories: true },
   });
 
   return (
@@ -18,7 +18,7 @@ export default async function MySubmissionsPage() {
         {submissions.map((n) => (
           <li key={n.id} className="py-3">
             <p className="text-xs uppercase text-neutral-500">
-              {n.category.name} · {n.status}
+              {n.categories.map((c) => c.name).join(", ")} · {n.status}
             </p>
             <p className="font-medium">{n.title}</p>
             {n.status === "REJECTED" && n.rejectionReason && (

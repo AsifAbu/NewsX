@@ -8,7 +8,7 @@ export default async function ApprovalsPage() {
   const pending = await prisma.news.findMany({
     where: { status: "PENDING" },
     orderBy: { createdAt: "asc" },
-    include: { category: true, author: true },
+    include: { categories: true, author: true },
   });
 
   return (
@@ -17,7 +17,9 @@ export default async function ApprovalsPage() {
       <ul className="divide-y divide-black/10">
         {pending.map((n) => (
           <li key={n.id} className="py-3">
-            <p className="text-xs uppercase text-neutral-500">{n.category.name}</p>
+            <p className="text-xs uppercase text-neutral-500">
+              {n.categories.map((c) => c.name).join(", ")}
+            </p>
             <Link href={`/news/${n.slug}`} className="font-medium hover:text-accent">
               {n.title}
             </Link>

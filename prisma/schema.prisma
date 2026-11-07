@@ -95,9 +95,8 @@ model News {
   updatedAt       DateTime   @updatedAt
 
   authorId   String
-  author     User     @relation("NewsAuthor", fields: [authorId], references: [id])
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
+  author     User       @relation("NewsAuthor", fields: [authorId], references: [id])
+  categories Category[]
 
   comments     Comment[]
   bookmarks    Bookmark[]

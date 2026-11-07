@@ -11,7 +11,7 @@ export function timeAgo(date: Date | null | undefined): string {
   return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-export function excerpt(body: string, length = 140): string {
+export function excerpt(body: string, length = 140, suffix = "…"): string {
   const clean = body.replace(/\s+/g, " ").trim();
-  return clean.length > length ? clean.slice(0, length).trimEnd() + "…" : clean;
+  return clean.length > length ? clean.slice(0, length).trimEnd() + suffix : clean;
 }

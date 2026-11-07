@@ -74,4 +74,12 @@ export async function toggleBookmarkAction(newsId: string, slug: string) {
   }
 
   revalidatePath(`/news/${slug}`);
+  revalidatePath("/bookmarks");
+}
+
+export async function removeBookmarkAction(bookmarkId: string) {
+  const session = await requireSession();
+  // Scope to the current user so one user can't delete another's bookmark.
+  await prisma.bookmark.deleteMany({ where: { id: bookmarkId, userId: session.user.id } });
+  revalidatePath("/bookmarks");
 }

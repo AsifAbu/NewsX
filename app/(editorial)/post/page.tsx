@@ -14,7 +14,10 @@ export default async function PostFormPage({
   const isAdmin = session.user.role === "ADMIN";
 
   if (edit) {
-    const existing = await prisma.news.findUnique({ where: { id: edit } });
+    const existing = await prisma.news.findUnique({
+      where: { id: edit },
+      include: { categories: true },
+    });
     if (!existing) notFound();
     if (!isAdmin && existing.authorId !== session.user.id) {
       redirect("/post?error=You can only edit your own submissions.");
@@ -26,7 +29,7 @@ export default async function PostFormPage({
         error={error}
         newsId={existing.id}
         initialTitle={existing.title}
-        initialCategoryId={existing.categoryId}
+        initialCategoryIds={existing.categories.map((c) => c.id)}
         initialImageUrl={existing.imageUrl ?? ""}
         initialBody={existing.body}
         initialSourceUrl={existing.sourceUrl ?? ""}

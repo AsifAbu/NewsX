@@ -19,7 +19,7 @@ export default async function SearchPage({
           ],
         },
         orderBy: { publishedAt: "desc" },
-        include: { category: true },
+        include: { categories: true },
         take: 20,
       })
     : [];
@@ -37,7 +37,9 @@ export default async function SearchPage({
       <ul className="divide-y divide-black/10">
         {results.map((n) => (
           <li key={n.id} className="py-3">
-            <p className="text-xs uppercase text-neutral-500">{n.category.name}</p>
+            <p className="text-xs uppercase text-neutral-500">
+              {n.categories.map((c) => c.name).join(", ")}
+            </p>
             <Link href={`/news/${n.slug}`} className="font-medium hover:text-accent">
               {n.title}
             </Link>
