@@ -1,0 +1,60 @@
+"use server";
+
+import { JSDOM } from "jsdom";
+import { Readability } from "@mozilla/readability";
+import { requireRole } from "@/lib/require-role";
+
+export type PulledArticle =
+  | { title: string; imageUrl: string | null; body: string }
+  | { error: string };
+
+export async function pullArticleAction(url: string): Promise<PulledArticle> {
+  await requireRole(["MODERATOR", "ADMIN"]);
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return { error: "That doesn't look like a valid URL." };
+  }
+
+  let html: string;
+  try {
+    const res = await fetch(parsedUrl.toString(), {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; NewsXBot/1.0)" },
+    });
+    if (!res.ok) return { error: `Could not fetch the page (HTTP ${res.status}).` };
+    html = await res.text();
+  } catch {
+    return { error: "Could not reach that URL." };
+  }
+
+  try {
+    const dom = new JSDOM(html, { url: parsedUrl.toString() });
+    const doc = dom.window.document;
+
+    const ogTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute("content");
+    const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute("content");
+
+    const parsed = new Readability(doc).parse();
+    if (!parsed || !parsed.content) {
+      return { error: "Couldn't extract article content from that page. Try pasting it manually." };
+    }
+
+    const articleDom = new JSDOM(parsed.content);
+    const blocks = Array.from(articleDom.window.document.body.querySelectorAll("p, h2, h3, li"))
+      .map((el) => el.textContent?.trim())
+      .filter((t): t is string => Boolean(t && t.length > 0));
+
+    const body = blocks.join("\n\n");
+    const title = parsed.title || ogTitle || doc.title || "";
+
+    if (!title || !body) {
+      return { error: "Couldn't extract a title or body from that page. Try pasting it manually." };
+    }
+
+    return { title, imageUrl: ogImage ?? null, body };
+  } catch {
+    return { error: "Something went wrong parsing that page. Try pasting it manually." };
+  }
+}

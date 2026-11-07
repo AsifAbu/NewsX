@@ -9,9 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.3.2",
+    "@mozilla/readability": "^0.6.0",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "bcryptjs": "^3.0.3",
+    "jsdom": "^31.0.0",
     "next": "16.4.5",
     "next-auth": "^5.0.0-beta.32",
     "pg": "^8.23.1",
@@ -22,6 +25,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",

@@ -67,6 +67,7 @@ model News {
   slug            String     @unique
   body            String
   imageUrl        String?
+  sourceUrl       String?
   status          NewsStatus @default(DRAFT)
   rejectionReason String?
   viewCount       Int        @default(0)

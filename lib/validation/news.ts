@@ -5,6 +5,7 @@ export const newsSchema = z.object({
   categoryId: z.string().min(1, "Category is required."),
   body: z.string().trim().min(20, "Body must be at least 20 characters."),
   imageUrl: z.url().optional().or(z.literal("")),
+  sourceUrl: z.url().optional().or(z.literal("")),
 });
 
 export const rejectSchema = z.object({

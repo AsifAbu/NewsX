@@ -28,6 +28,7 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
     categoryId: formData.get("categoryId"),
     body: formData.get("body"),
     imageUrl: formData.get("imageUrl") ?? "",
+    sourceUrl: formData.get("sourceUrl") ?? "",
   });
   if (!parsed.success) {
     redirect(`/post?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input.")}`);
@@ -39,6 +40,7 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
       slug: slugify(parsed.data.title),
       body: parsed.data.body,
       imageUrl: parsed.data.imageUrl || null,
+      sourceUrl: parsed.data.sourceUrl || null,
       categoryId: parsed.data.categoryId,
       authorId: session.user.id,
       status,
