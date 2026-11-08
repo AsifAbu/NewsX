@@ -20,6 +20,12 @@ export default async function ProfilePage() {
   }
 
   const isDeactivated = Boolean(user.deactivatedAt && user.deactivatedAt <= new Date());
+  // Role/News authored/Status are only meaningful for editorial accounts —
+  // a plain Registered User never authors news or gets deactivated by role,
+  // so those rows are hidden for them and shown for Moderator/Admin viewing
+  // their own profile (Admin viewing other users still sees everything, via
+  // the separate /users/[id] page).
+  const showEditorialInfo = user.role !== "USER";
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
@@ -37,32 +43,38 @@ export default async function ProfilePage() {
           <dt className="inline text-neutral-500">Phone: </dt>
           <dd className="inline">{user.phone || "—"}</dd>
         </div>
-        <div>
-          <dt className="inline text-neutral-500">Role: </dt>
-          <dd className="inline">{user.role}</dd>
-        </div>
+        {showEditorialInfo && (
+          <div>
+            <dt className="inline text-neutral-500">Role: </dt>
+            <dd className="inline">{user.role}</dd>
+          </div>
+        )}
         <div>
           <dt className="inline text-neutral-500">Joined: </dt>
           <dd className="inline">{user.createdAt.toLocaleDateString()}</dd>
         </div>
-        <div>
-          <dt className="inline text-neutral-500">News authored: </dt>
-          <dd className="inline">{user._count.news}</dd>
-        </div>
+        {showEditorialInfo && (
+          <div>
+            <dt className="inline text-neutral-500">News authored: </dt>
+            <dd className="inline">{user._count.news}</dd>
+          </div>
+        )}
         <div>
           <dt className="inline text-neutral-500">Comments posted: </dt>
           <dd className="inline">{user._count.comments}</dd>
         </div>
-        <div>
-          <dt className="inline text-neutral-500">Status: </dt>
-          <dd className="inline">
-            {isDeactivated ? (
-              <span className="text-red-600">Deactivated</span>
-            ) : (
-              <span className="text-green-700">Active</span>
-            )}
-          </dd>
-        </div>
+        {showEditorialInfo && (
+          <div>
+            <dt className="inline text-neutral-500">Status: </dt>
+            <dd className="inline">
+              {isDeactivated ? (
+                <span className="text-red-600">Deactivated</span>
+              ) : (
+                <span className="text-green-700">Active</span>
+              )}
+            </dd>
+          </div>
+        )}
       </dl>
     </div>
   );

@@ -6,6 +6,16 @@ const nextConfig: NextConfig = {
   // view counts); enabling this requires wrapping every data access in
   // Suspense boundaries, a Phase 2 performance pass, not an MVP blocker.
   cacheComponents: false,
+  experimental: {
+    // Next.js Server Actions silently cap request bodies at 1MB by default —
+    // separate from, and smaller than, the 10MB check in lib/cloudinary.ts.
+    // A real photo (e.g. a phone camera avatar upload) routinely exceeds 1MB,
+    // so it was failing at the framework level (HTTP 413) before our own
+    // validation ever ran. Raised to match our own limit.
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
   // @huggingface/transformers loads its Node backend via a dynamic
   // require("onnxruntime-node"), which Next.js's dependency tracer can't
   // follow statically — on Vercel this left the native onnxruntime-node
