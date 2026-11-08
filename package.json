@@ -16,7 +16,7 @@
     "@prisma/client": "^7.10.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.11.0",
-    "jsdom": "^31.0.0",
+    "jsdom": "27.3.0",
     "next": "16.4.5",
     "next-auth": "^5.0.0-beta.32",
     "pg": "^8.23.1",
