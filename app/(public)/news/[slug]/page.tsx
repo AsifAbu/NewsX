@@ -8,8 +8,10 @@ import RejectForm from "@/components/RejectForm";
 import ReportCommentModal from "@/components/ReportCommentModal";
 import SummarizeToggle from "@/components/SummarizeToggle";
 import { deleteCommentAction, toggleBookmarkAction } from "@/lib/actions/engagement";
-import { approveNewsAction } from "@/lib/actions/news";
+import { approveNewsAction, updateNewsArchiveStatusAction } from "@/lib/actions/news";
 import { timeAgo } from "@/lib/format";
+import NewsUpdateMenu from "@/components/NewsUpdateMenu";
+import SubmitButton from "@/components/SubmitButton";
 
 export default async function NewsDetailsPage({
   params,
@@ -33,9 +35,21 @@ export default async function NewsDetailsPage({
   });
 
   if (!news) notFound();
+  const isAdmin = session?.user?.role === "ADMIN";
+  const isModerator = session?.user?.role === "MODERATOR";
+  const isArchived = news.status === "DELETED" || news.status === "HIDDEN";
+  // Gates viewing non-published content, and the "Update" control: Admin;
+  // the article's own (non-archived) author; or — since any Moderator can
+  // edit any news now, always resubmitting it for approval — any Moderator,
+  // for any non-archived article. Without this, a Moderator who edits
+  // someone else's article would get a dead-end 404 redirecting back to it
+  // once it flips to Pending. Deleted/Hidden stays Admin-only regardless.
   const canPreview =
-    session?.user && (session.user.role === "ADMIN" || session.user.id === news.authorId);
+    session?.user &&
+    (isAdmin || (!isArchived && (session.user.id === news.authorId || isModerator)));
   if (news.status !== "PUBLISHED" && !canPreview) notFound();
+
+  const canUpdate = canPreview;
 
   const [isBookmarked, moreNews] = await Promise.all([
     session?.user
@@ -60,14 +74,7 @@ export default async function NewsDetailsPage({
       <p className="text-xs uppercase text-accent">{news.categories.map((c) => c.name).join(", ")}</p>
       <div className="flex items-start justify-between gap-4">
         <h1 className="font-headline text-3xl font-bold leading-tight">{news.title}</h1>
-        {canPreview && (
-          <Link
-            href={`/post?edit=${news.id}`}
-            className="shrink-0 rounded border border-accent px-3 py-1.5 text-sm text-accent hover:bg-accent hover:text-white"
-          >
-            Edit
-          </Link>
-        )}
+        {canUpdate && <NewsUpdateMenu newsId={news.id} canArchive={isAdmin} />}
       </div>
       <p className="text-sm text-neutral-500">
         By {news.author.name} ·{" "}
@@ -85,14 +92,35 @@ export default async function NewsDetailsPage({
         />
       )}
 
-      {session?.user?.role === "ADMIN" && news.status === "PENDING" && (
+      {isAdmin && isArchived && (
+        <div className="space-y-2 rounded border border-red-300 bg-red-50 p-4">
+          <p className="text-sm font-medium text-red-700">
+            This article is currently {news.status === "DELETED" ? "Deleted" : "Hidden"}
+            {news.archivedAt ? ` (since ${news.archivedAt.toLocaleString()})` : ""} — Guests, Users,
+            and Moderators cannot see it. Manage it here or from the Archive page.
+          </p>
+          <form action={updateNewsArchiveStatusAction.bind(null, news.id, "PUBLISHED")}>
+            <SubmitButton
+              pendingLabel="Restoring..."
+              className="rounded border border-green-700 px-3 py-1.5 text-sm text-green-700 hover:bg-green-50"
+            >
+              Restore to Active
+            </SubmitButton>
+          </form>
+        </div>
+      )}
+
+      {isAdmin && news.status === "PENDING" && (
         <div className="space-y-3 rounded border border-accent/30 bg-accent/5 p-4">
           <p className="text-sm font-medium">Pending approval</p>
           <div className="flex items-center gap-3">
             <form action={approveNewsAction.bind(null, news.id)}>
-              <button className="rounded bg-accent px-3 py-1.5 text-sm text-white hover:opacity-90">
+              <SubmitButton
+                pendingLabel="Approving..."
+                className="rounded bg-accent px-3 py-1.5 text-sm text-white hover:opacity-90"
+              >
                 Approve
-              </button>
+              </SubmitButton>
             </form>
             <RejectForm newsId={news.id} />
           </div>
@@ -102,7 +130,8 @@ export default async function NewsDetailsPage({
       <SummarizeToggle body={news.body}>
         {session?.user && (
           <form action={toggleBookmarkAction.bind(null, news.id, news.slug)}>
-            <button
+            <SubmitButton
+              pendingLabel="..."
               className={`rounded border px-3 py-1.5 text-sm transition ${
                 isBookmarked
                   ? "border-accent bg-accent text-white"
@@ -110,7 +139,7 @@ export default async function NewsDetailsPage({
               }`}
             >
               {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
-            </button>
+            </SubmitButton>
           </form>
         )}
       </SummarizeToggle>
@@ -134,7 +163,9 @@ export default async function NewsDetailsPage({
                   <ReportCommentModal commentId={c.id} slug={news.slug} />
                   {session.user.role === "ADMIN" && (
                     <form action={deleteCommentAction.bind(null, c.id, news.slug)}>
-                      <button className="hover:text-accent">Delete</button>
+                      <SubmitButton pendingLabel="Deleting..." className="hover:text-accent">
+                        Delete
+                      </SubmitButton>
                     </form>
                   )}
                 </div>

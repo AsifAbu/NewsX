@@ -19,8 +19,10 @@ export default async function PostFormPage({
       include: { categories: true },
     });
     if (!existing) notFound();
-    if (!isAdmin && existing.authorId !== session.user.id) {
-      redirect("/post?error=You can only edit your own submissions.");
+    // Any Moderator can edit any news — not just their own submissions.
+    // Deleted/Hidden stays Admin-only, same as everywhere else.
+    if (!isAdmin && (existing.status === "DELETED" || existing.status === "HIDDEN")) {
+      redirect("/post?error=That article is no longer available to edit.");
     }
     return (
       <NewsForm

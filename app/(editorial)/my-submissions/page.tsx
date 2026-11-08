@@ -6,7 +6,9 @@ export default async function MySubmissionsPage() {
   const session = await requireRole(["MODERATOR", "ADMIN"]);
 
   const submissions = await prisma.news.findMany({
-    where: { authorId: session.user.id },
+    // Deleted/Hidden is Admin-only visibility — never shown here either,
+    // even for the Moderator who authored it.
+    where: { authorId: session.user.id, status: { notIn: ["DELETED", "HIDDEN"] } },
     orderBy: { createdAt: "desc" },
     include: { categories: true },
   });

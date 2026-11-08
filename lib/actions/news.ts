@@ -77,8 +77,11 @@ async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | 
   if (!existing) {
     redirect("/post?error=That article no longer exists.");
   }
-  if (session.user.role !== "ADMIN" && existing.authorId !== session.user.id) {
-    redirect("/post?error=You can only edit your own submissions.");
+  // Any Moderator can edit any news (and it always goes back through
+  // approval below) — not just their own submissions. Deleted/Hidden stays
+  // Admin-only to edit, same as the visibility rule everywhere else.
+  if (session.user.role !== "ADMIN" && (existing.status === "DELETED" || existing.status === "HIDDEN")) {
+    redirect("/post?error=That article is no longer available to edit.");
   }
 
   const parsed = newsSchema.safeParse({
@@ -171,10 +174,30 @@ export async function rejectNewsAction(
   revalidatePath("/approvals");
 }
 
-export async function deleteNewsAction(newsId: string) {
-  await requireRole(["ADMIN"]);
-  await prisma.news.delete({ where: { id: newsId } });
+// Replaces the old hard-delete: Delete/Hide are now a reversible status
+// change (never an actual row removal), so an Admin can always bring a news
+// item back via the Archive page. "PUBLISHED" here is the Archive page's
+// "Active" option.
+export async function updateNewsArchiveStatusAction(
+  newsId: string,
+  status: "PUBLISHED" | "DELETED" | "HIDDEN"
+) {
+  const session = await requireRole(["ADMIN"]);
+  const isRestoring = status === "PUBLISHED";
+
+  const existing = await prisma.news.update({
+    where: { id: newsId },
+    data: {
+      status,
+      archivedAt: isRestoring ? null : new Date(),
+      archivedById: isRestoring ? null : session.user.id,
+    },
+  });
+
+  revalidatePath("/archive");
   revalidatePath("/");
+  revalidatePath("/my-submissions");
+  revalidatePath(`/news/${existing.slug}`);
 }
 
 export async function incrementViewAction(newsId: string) {
