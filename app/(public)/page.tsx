@@ -15,18 +15,33 @@ export default async function DashboardPage({
   // "all" is a reserved sentinel (never a real Category cuid) for the "All" nav tab.
   const isAll = category === "all";
 
-  // Most Viewed and Latest Updates always show site-wide news — only the
-  // hero area (5-card grid, or a category/all list in its place) is scoped.
-  const [activeCategory, latest, mostViewed, categoryNews, allNewsInitial] = await Promise.all([
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  // Hero cards, Most Viewed, and Latest Updates each have their own independent
+  // ordering now: hero = today's most-viewed, Most Viewed = last-30-days most-viewed,
+  // Latest Updates = site-wide newest-first (never scoped to a category/All).
+  const [activeCategory, todayTop, latestNews, mostViewed, categoryNews, allNewsInitial] = await Promise.all([
     category && !isAll ? prisma.category.findUnique({ where: { id: category } }) : Promise.resolve(null),
     prisma.news.findMany({
-      where: { status: "PUBLISHED" },
-      orderBy: { publishedAt: "desc" },
-      take: 9,
+      where: { status: "PUBLISHED", publishedAt: { gte: todayStart } },
+      orderBy: { viewCount: "desc" },
+      take: 5,
       include: { categories: true },
     }),
     prisma.news.findMany({
       where: { status: "PUBLISHED" },
+      orderBy: { publishedAt: "desc" },
+      take: 8,
+      include: { categories: true },
+    }),
+    prisma.news.findMany({
+      // News.viewCount is a cumulative counter with no per-view timestamp, so
+      // "last 30 days" is approximated the same way as the hero's "today": by
+      // view count among articles published within that window.
+      where: { status: "PUBLISHED", publishedAt: { gte: thirtyDaysAgo } },
       orderBy: { viewCount: "desc" },
       take: 10,
     }),
@@ -48,6 +63,19 @@ export default async function DashboardPage({
       : Promise.resolve(null),
   ]);
 
+  // Fewer than 5 articles published today? Fill the remaining hero slots with
+  // the next most-viewed articles overall (any date), so the hero never looks sparse.
+  let heroItems = todayTop;
+  if (heroItems.length < 5) {
+    const fallback = await prisma.news.findMany({
+      where: { status: "PUBLISHED", id: { notIn: heroItems.map((n) => n.id) } },
+      orderBy: { viewCount: "desc" },
+      take: 5 - heroItems.length,
+      include: { categories: true },
+    });
+    heroItems = [...heroItems, ...fallback];
+  }
+
   const allNewsInitialItems =
     allNewsInitial?.map((n) => ({
       id: n.id,
@@ -60,12 +88,11 @@ export default async function DashboardPage({
     })) ?? [];
   const allNewsHasMore = allNewsInitialItems.length === ALL_PAGE_SIZE;
 
-  const [featured, ...rest] = latest;
-  const secondary = rest.slice(0, 4);
-  // Unfiltered: the 4 secondary cards already used items 2-5, so Latest
-  // Updates picks up from item 6. Filtered: the hero area shows category
-  // news instead of secondary cards, so Latest Updates shows all of `rest`.
-  const latestList = activeCategory ? rest : rest.slice(4);
+  // Hero: #1 today's-most-viewed (or fallback) is the big featured card, the
+  // rest (up to 4) are the secondary cards — see FR-1.4 ordering in the SRS.
+  const [featured, ...secondary] = heroItems;
+  // Latest Updates: a fixed 8 items everywhere it appears, newest first.
+  const latestList = latestNews;
 
   if (!featured) {
     return (
@@ -77,10 +104,10 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      {/* Hero block: featured story + 4 secondary cards (left) | Most Viewed, full block height (right).
-          With a category selected, the left side swaps to a list of that category's news, followed
-          immediately by Latest Updates in the same column — so a short category list doesn't leave a
-          dead gap under the (taller, site-wide) Most Viewed column it's stretched to match. */}
+      {/* Hero block: featured story + 4 secondary cards, ranked by today's view count (left) |
+          Most Viewed, last 30 days' view count, sized to its own content (right, self-start).
+          With a category selected, the left side swaps to a list of that category's news, followed immediately
+          by Latest Updates (site-wide, newest-first) in the same column. */}
       <section className="grid gap-6 md:grid-cols-4">
         <div className="space-y-6 md:col-span-3">
           {activeCategory || isAll ? (
