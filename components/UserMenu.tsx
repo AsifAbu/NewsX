@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/lib/actions/auth";
 import { UserCircleIcon } from "@/components/icons";
+import SubmitButton from "@/components/SubmitButton";
 
 export default function UserMenu({
   name,
@@ -61,12 +62,18 @@ export default function UserMenu({
                 <Link href="/reports" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-50">
                   Reports
                 </Link>
+                <Link href="/archive" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-50">
+                  Archive
+                </Link>
               </>
             )}
             <form action={logoutAction}>
-              <button type="submit" className="block w-full px-4 py-2 text-left text-sm hover:bg-neutral-50">
+              <SubmitButton
+                pendingLabel="Logging out..."
+                className="block w-full px-4 py-2 text-left text-sm hover:bg-neutral-50"
+              >
                 Logout
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </>

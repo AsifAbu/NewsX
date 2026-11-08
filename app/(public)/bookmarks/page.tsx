@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/require-role";
 import { removeBookmarkAction } from "@/lib/actions/engagement";
+import SubmitButton from "@/components/SubmitButton";
 
 export default async function BookmarksPage() {
   const session = await requireSession();
@@ -36,9 +37,12 @@ export default async function BookmarksPage() {
               </td>
               <td className="py-2 text-right">
                 <form action={removeBookmarkAction.bind(null, b.id)}>
-                  <button className="rounded border border-black/10 px-2 py-1 text-xs hover:border-accent hover:text-accent">
+                  <SubmitButton
+                    pendingLabel="Removing..."
+                    className="rounded border border-black/10 px-2 py-1 text-xs hover:border-accent hover:text-accent"
+                  >
                     Remove
-                  </button>
+                  </SubmitButton>
                 </form>
               </td>
             </tr>

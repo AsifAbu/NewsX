@@ -10,6 +10,7 @@ import {
 import { pullArticleAction } from "@/lib/actions/scrape";
 import { rephraseAction } from "@/lib/actions/rephrase";
 import ImageUpload from "@/components/ImageUpload";
+import SubmitButton from "@/components/SubmitButton";
 
 type Category = { id: string; name: string };
 
@@ -186,24 +187,27 @@ export default function NewsForm({
       </div>
 
       <div className="flex gap-2">
-        <button type="submit" className="rounded border border-black/10 px-3 py-2 text-sm hover:border-accent">
+        <SubmitButton
+          pendingLabel="Saving..."
+          className="rounded border border-black/10 px-3 py-2 text-sm hover:border-accent"
+        >
           Save Draft
-        </button>
-        <button
-          type="submit"
+        </SubmitButton>
+        <SubmitButton
           formAction={submitAction}
+          pendingLabel="Submitting..."
           className="rounded bg-accent px-3 py-2 text-sm text-white hover:opacity-90"
         >
           Submit for Approval
-        </button>
+        </SubmitButton>
         {isAdmin && (
-          <button
-            type="submit"
+          <SubmitButton
             formAction={publishAction}
+            pendingLabel="Publishing..."
             className="rounded bg-black px-3 py-2 text-sm text-white hover:opacity-90"
           >
             Publish
-          </button>
+          </SubmitButton>
         )}
       </div>
     </form>

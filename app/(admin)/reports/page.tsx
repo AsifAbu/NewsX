@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/require-role";
 import { deleteCommentAction, dismissReportsAction } from "@/lib/actions/engagement";
+import SubmitButton from "@/components/SubmitButton";
 
 export default async function ReportsPage() {
   await requireRole(["ADMIN"]);
@@ -61,14 +62,20 @@ export default async function ReportsPage() {
               <td className="py-3 align-top">
                 <div className="flex gap-3">
                   <form action={dismissReportsAction.bind(null, r.comment.id)}>
-                    <button className="rounded border border-black/10 px-2 py-1 text-xs hover:border-accent">
+                    <SubmitButton
+                      pendingLabel="Dismissing..."
+                      className="rounded border border-black/10 px-2 py-1 text-xs hover:border-accent"
+                    >
                       Dismiss
-                    </button>
+                    </SubmitButton>
                   </form>
                   <form action={deleteCommentAction.bind(null, r.comment.id, r.comment.news.slug)}>
-                    <button className="rounded border border-red-600 px-2 py-1 text-xs text-red-600 hover:bg-red-50">
+                    <SubmitButton
+                      pendingLabel="Deleting..."
+                      className="rounded border border-red-600 px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                    >
                       Delete
-                    </button>
+                    </SubmitButton>
                   </form>
                 </div>
               </td>

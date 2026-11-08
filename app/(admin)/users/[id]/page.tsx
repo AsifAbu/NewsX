@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/require-role";
 import { deleteUserAction, reactivateUserAction } from "@/lib/actions/users";
 import DeactivateModal from "@/components/DeactivateModal";
+import SubmitButton from "@/components/SubmitButton";
 
 export default async function UserDetailPage({
   params,
@@ -64,18 +65,24 @@ export default async function UserDetailPage({
       <div className="flex gap-2 pt-2">
         {user.deactivatedAt ? (
           <form action={reactivateUserAction.bind(null, user.id)}>
-            <button className="rounded border border-green-700 px-3 py-1.5 text-sm text-green-700 hover:bg-green-50">
+            <SubmitButton
+              pendingLabel="Reactivating..."
+              className="rounded border border-green-700 px-3 py-1.5 text-sm text-green-700 hover:bg-green-50"
+            >
               Reactivate
-            </button>
+            </SubmitButton>
           </form>
         ) : (
           <DeactivateModal userId={user.id} />
         )}
 
         <form action={deleteUserAction.bind(null, user.id)}>
-          <button className="rounded border border-red-600 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
+          <SubmitButton
+            pendingLabel="Deleting..."
+            className="rounded border border-red-600 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+          >
             Delete
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </div>
