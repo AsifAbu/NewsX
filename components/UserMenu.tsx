@@ -8,9 +8,11 @@ import { UserCircleIcon } from "@/components/icons";
 export default function UserMenu({
   name,
   role,
+  avatarUrl,
 }: {
   name: string;
   role: "USER" | "MODERATOR" | "ADMIN";
+  avatarUrl: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const isAdmin = role === "ADMIN";
@@ -25,13 +27,21 @@ export default function UserMenu({
         title={name}
         className="flex items-center text-neutral-600 hover:text-accent"
       >
-        <UserCircleIcon className="h-7 w-7" />
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" />
+        ) : (
+          <UserCircleIcon className="h-7 w-7" />
+        )}
       </button>
 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-black/10 bg-white py-1 shadow-lg">
+            <Link href="/profile" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-50">
+              Profile
+            </Link>
             <Link href="/bookmarks" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-50">
               Bookmarks
             </Link>

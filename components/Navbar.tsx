@@ -43,7 +43,7 @@ async function getWeather() {
 export default async function Navbar() {
   const session = await auth();
 
-  const [categories, weather, notifications, unreadCount] = await Promise.all([
+  const [categories, weather, notifications, unreadCount, currentUser] = await Promise.all([
     prisma.category.findMany({ orderBy: { name: "asc" } }),
     getWeather(),
     session?.user
@@ -56,6 +56,9 @@ export default async function Navbar() {
     session?.user
       ? prisma.notification.count({ where: { userId: session.user.id, isRead: false } })
       : Promise.resolve(0),
+    session?.user
+      ? prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true } })
+      : Promise.resolve(null),
   ]);
 
   const today = new Date().toLocaleDateString("en-US", {
@@ -121,7 +124,11 @@ export default async function Navbar() {
                   }))}
                   unreadCount={unreadCount}
                 />
-                <UserMenu name={session.user.name ?? ""} role={session.user.role} />
+                <UserMenu
+                  name={session.user.name ?? ""}
+                  role={session.user.role}
+                  avatarUrl={currentUser?.avatarUrl ?? null}
+                />
               </>
             ) : (
               <Link
