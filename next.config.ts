@@ -14,6 +14,15 @@ const nextConfig: NextConfig = {
   // tracing/bundling them and include their real node_modules contents
   // (native binaries included) instead.
   serverExternalPackages: ["onnxruntime-node", "onnxruntime-common", "@huggingface/transformers"],
+  // jsdom's own dependency chain (used for scraping article URLs) keeps
+  // introducing ESM-only sub-dependencies (first @exodus/bytes, then
+  // @csstools/css-calc via @asamuzakjp/css-color) that crash with
+  // ERR_REQUIRE_ESM when jsdom is left as a raw runtime external — Node
+  // can't require() an ES Module synchronously, no matter what. Bundling
+  // jsdom through Next's own compiler instead lets its interop layer
+  // resolve ESM/CJS mismatches at build time, fixing this whole class of
+  // failure instead of chasing each new ESM-only leaf one at a time.
+  transpilePackages: ["jsdom"],
   // The local ONNX paraphrase models (~265MB each) are read from disk at
   // runtime via a dynamic path, not a static import, so Next.js won't trace
   // them into the serverless function bundle automatically. This makes sure
