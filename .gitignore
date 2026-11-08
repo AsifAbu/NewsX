@@ -42,9 +42,6 @@ next-env.d.ts
 
 /app/generated/prisma
 
-# local ONNX paraphrase models (large binary files, not committed)
-/models
-
 # vendored transformers.js clone — unused, not imported (app uses the
 # @huggingface/transformers npm package instead); too large to commit
 /transformers.js

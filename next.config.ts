@@ -13,7 +13,8 @@ const nextConfig: NextConfig = {
   // implications (needs the "Large Functions" beta — standard 250MB limit
   // doesn't cover these).
   outputFileTracingIncludes: {
-    "/post": ["./models/**"],
+    "/post": ["./models/**"], // Rephrase
+    "/news/[slug]": ["./models/**"], // Summarize
   },
   turbopack: {
     rules: {
