@@ -52,6 +52,12 @@ const nextConfig: NextConfig = {
       "./node_modules/onnxruntime-node/lib/**",
       "./node_modules/onnxruntime-node/bin/napi-v6/linux/**",
       "./node_modules/onnxruntime-common/**",
+      // jsdom reads its own default stylesheet via fs.readFileSync at module
+      // load (lib/jsdom/living/helpers/style-rules.js) — a raw path.resolve
+      // join, invisible to the tracer regardless of transpilePackages.
+      // Confirmed this is the only runtime file-read in jsdom's own code or
+      // its major dependencies.
+      "./node_modules/jsdom/lib/jsdom/browser/default-stylesheet.css",
     ],
     "/news/[slug]": ["./models/**"], // Summarize
     "/news/*": [
