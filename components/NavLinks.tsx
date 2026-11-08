@@ -26,6 +26,13 @@ export default function NavLinks({
       >
         Latest
       </Link>
+      <Link
+        href="/?category=all"
+        onClick={onNavigate}
+        className={`whitespace-nowrap text-sm font-medium ${stateClass(activeCategory === "all")}`}
+      >
+        All
+      </Link>
       {categories.map((c) => (
         <Link
           key={c.id}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import NavLinks from "@/components/NavLinks";
+import { SearchIcon } from "@/components/icons";
 
 export default function MobileNav({
   categories,
@@ -31,19 +32,15 @@ export default function MobileNav({
             <nav className="flex flex-col gap-3">
               <NavLinks categories={categories} onNavigate={() => setOpen(false)} />
             </nav>
-            <form action="/search" className="mt-4 flex items-center">
-              <input
-                name="q"
-                placeholder="Search"
-                className="w-full rounded-l border border-r-0 border-black/10 px-2 py-1 text-sm"
-              />
-              <button
-                type="submit"
-                aria-label="Search"
-                className="rounded-r border border-black/10 bg-neutral-50 px-2 py-1 text-sm hover:text-accent"
-              >
-                🔍
-              </button>
+            <form action="/search" className="mt-4">
+              <div className="flex items-center gap-2 rounded-full border border-black/10 bg-neutral-50 px-3 py-2 transition focus-within:border-accent focus-within:bg-white focus-within:ring-2 focus-within:ring-accent/20">
+                <SearchIcon className="h-4 w-4 shrink-0 text-neutral-400" />
+                <input
+                  name="q"
+                  placeholder="Search news..."
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-neutral-400"
+                />
+              </div>
             </form>
           </div>
         </>

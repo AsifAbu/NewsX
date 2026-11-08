@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/lib/actions/auth";
+import { UserCircleIcon } from "@/components/icons";
 
 export default function UserMenu({
   name,
@@ -20,9 +21,11 @@ export default function UserMenu({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="whitespace-nowrap text-neutral-600 hover:text-accent"
+        aria-label={`Account menu for ${name}`}
+        title={name}
+        className="flex items-center text-neutral-600 hover:text-accent"
       >
-        {name} ▾
+        <UserCircleIcon className="h-7 w-7" />
       </button>
 
       {open && (

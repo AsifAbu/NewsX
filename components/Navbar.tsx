@@ -5,6 +5,7 @@ import MobileNav from "@/components/MobileNav";
 import NavLinks from "@/components/NavLinks";
 import NotificationBell from "@/components/NotificationBell";
 import UserMenu from "@/components/UserMenu";
+import { SearchIcon } from "@/components/icons";
 
 // Free, keyless weather API (Open-Meteo). Default location is a placeholder
 // (Dhaka) — not in the original BRD/SRS; swap coordinates or wire up
@@ -95,19 +96,15 @@ export default async function Navbar() {
               <NavLinks categories={categories} />
             </nav>
 
-            <form action="/search" className="hidden items-center md:flex">
-              <input
-                name="q"
-                placeholder="Search"
-                className="w-40 rounded-l border border-r-0 border-black/10 px-2 py-1 text-sm"
-              />
-              <button
-                type="submit"
-                aria-label="Search"
-                className="rounded-r border border-black/10 bg-neutral-50 px-2 py-1 text-sm hover:text-accent"
-              >
-                🔍
-              </button>
+            <form action="/search" className="hidden md:flex">
+              <div className="flex w-48 items-center gap-2 rounded-full border border-black/10 bg-neutral-50 px-3 py-1.5 transition focus-within:border-accent focus-within:bg-white focus-within:ring-2 focus-within:ring-accent/20">
+                <SearchIcon className="h-4 w-4 shrink-0 text-neutral-400" />
+                <input
+                  name="q"
+                  placeholder="Search news..."
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-neutral-400"
+                />
+              </div>
             </form>
           </div>
 

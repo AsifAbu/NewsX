@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { newsSchema, rejectSchema } from "@/lib/validation/news";
 import { requireRole } from "@/lib/require-role";
 import { notifyAdmins, notifyUser } from "@/lib/notify";
+import type { NewsRowItem } from "@/components/NewsRow";
 
 function slugify(title: string) {
   return (
@@ -181,4 +182,26 @@ export async function incrementViewAction(newsId: string) {
     where: { id: newsId },
     data: { viewCount: { increment: 1 } },
   });
+}
+
+// Powers the "All" nav tab's paginated list (components/AllNewsList.tsx):
+// 15 on first load, then 10 more per "More" click, newest first.
+export async function loadMoreNewsAction(skip: number, take: number): Promise<NewsRowItem[]> {
+  const items = await prisma.news.findMany({
+    where: { status: "PUBLISHED" },
+    orderBy: { publishedAt: "desc" },
+    skip,
+    take,
+    include: { categories: true },
+  });
+
+  return items.map((n) => ({
+    id: n.id,
+    slug: n.slug,
+    title: n.title,
+    body: n.body,
+    imageUrl: n.imageUrl,
+    publishedAt: n.publishedAt ? n.publishedAt.toISOString() : null,
+    categories: n.categories.map((c) => ({ name: c.name })),
+  }));
 }

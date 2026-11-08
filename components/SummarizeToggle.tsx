@@ -38,7 +38,7 @@ export default function SummarizeToggle({
           type="button"
           onClick={handleClick}
           disabled={isPending}
-          className="rounded border border-black/10 px-3 py-1.5 text-sm hover:border-accent hover:text-accent disabled:opacity-50"
+          className="rounded border border-accent px-3 py-1.5 text-sm text-accent hover:bg-accent hover:text-white disabled:opacity-50"
         >
           {isPending ? "Summarizing..." : summary ? "Full Version" : "Summarize"}
         </button>

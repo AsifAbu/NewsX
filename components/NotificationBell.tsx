@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { markNotificationReadAction } from "@/lib/actions/notifications";
+import { BellIcon } from "@/components/icons";
 
 type NotificationItem = {
   id: string;
@@ -28,9 +29,9 @@ export default function NotificationBell({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
-        className="relative rounded px-1.5 py-1 text-lg hover:text-accent"
+        className="relative rounded px-1.5 py-1 text-neutral-700 hover:text-accent"
       >
-        🔔
+        <BellIcon className="h-6 w-6" />
         {badge && (
           <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
             {badge}

@@ -1,45 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { timeAgo, excerpt } from "@/lib/format";
+import { NewsRowList } from "@/components/NewsRow";
+import AllNewsList from "@/components/AllNewsList";
 
-type NewsListItem = {
-  id: string;
-  slug: string;
-  title: string;
-  body: string;
-  imageUrl: string | null;
-  publishedAt: Date | null;
-  categories: { name: string }[];
-};
-
-function NewsListRows({ items }: { items: NewsListItem[] }) {
-  return (
-    <ul className="divide-y divide-black/10">
-      {items.map((n) => (
-        <li key={n.id}>
-          <Link href={`/news/${n.slug}`} className="flex items-start justify-between gap-4 py-4">
-            <div>
-              <p className="text-xs uppercase text-neutral-500">
-                {n.categories.map((c) => c.name).join(", ")}
-              </p>
-              <h3 className="font-bold leading-snug hover:text-accent">{n.title}</h3>
-              <p className="mt-1 text-sm text-neutral-600">{excerpt(n.body)}</p>
-              <p className="mt-2 text-xs text-neutral-400">{timeAgo(n.publishedAt)}</p>
-            </div>
-            {n.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={n.imageUrl}
-                alt={n.title}
-                className="h-24 w-32 shrink-0 rounded bg-neutral-100 object-contain"
-              />
-            )}
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
-}
+const ALL_PAGE_SIZE = 15;
 
 export default async function DashboardPage({
   searchParams,
@@ -47,11 +12,13 @@ export default async function DashboardPage({
   searchParams: Promise<{ category?: string }>;
 }) {
   const { category } = await searchParams;
+  // "all" is a reserved sentinel (never a real Category cuid) for the "All" nav tab.
+  const isAll = category === "all";
 
   // Most Viewed and Latest Updates always show site-wide news — only the
-  // hero area (5-card grid, or a category list in its place) is scoped.
-  const [activeCategory, latest, mostViewed, categoryNews] = await Promise.all([
-    category ? prisma.category.findUnique({ where: { id: category } }) : Promise.resolve(null),
+  // hero area (5-card grid, or a category/all list in its place) is scoped.
+  const [activeCategory, latest, mostViewed, categoryNews, allNewsInitial] = await Promise.all([
+    category && !isAll ? prisma.category.findUnique({ where: { id: category } }) : Promise.resolve(null),
     prisma.news.findMany({
       where: { status: "PUBLISHED" },
       orderBy: { publishedAt: "desc" },
@@ -63,7 +30,7 @@ export default async function DashboardPage({
       orderBy: { viewCount: "desc" },
       take: 10,
     }),
-    category
+    category && !isAll
       ? prisma.news.findMany({
           where: { status: "PUBLISHED", categories: { some: { id: category } } },
           orderBy: { publishedAt: "desc" },
@@ -71,7 +38,27 @@ export default async function DashboardPage({
           include: { categories: true },
         })
       : Promise.resolve(null),
+    isAll
+      ? prisma.news.findMany({
+          where: { status: "PUBLISHED" },
+          orderBy: { publishedAt: "desc" },
+          take: ALL_PAGE_SIZE,
+          include: { categories: true },
+        })
+      : Promise.resolve(null),
   ]);
+
+  const allNewsInitialItems =
+    allNewsInitial?.map((n) => ({
+      id: n.id,
+      slug: n.slug,
+      title: n.title,
+      body: n.body,
+      imageUrl: n.imageUrl,
+      publishedAt: n.publishedAt ? n.publishedAt.toISOString() : null,
+      categories: n.categories.map((c) => ({ name: c.name })),
+    })) ?? [];
+  const allNewsHasMore = allNewsInitialItems.length === ALL_PAGE_SIZE;
 
   const [featured, ...rest] = latest;
   const secondary = rest.slice(0, 4);
@@ -96,23 +83,33 @@ export default async function DashboardPage({
           dead gap under the (taller, site-wide) Most Viewed column it's stretched to match. */}
       <section className="grid gap-6 md:grid-cols-4">
         <div className="space-y-6 md:col-span-3">
-          {activeCategory ? (
+          {activeCategory || isAll ? (
             <>
               <div>
                 <h2 className="mb-3 font-headline text-xl font-bold uppercase text-accent">
-                  {activeCategory.name}
+                  {isAll ? "All" : activeCategory!.name}
                 </h2>
-                {categoryNews && categoryNews.length > 0 ? (
-                  <NewsListRows items={categoryNews} />
+                {isAll ? (
+                  <AllNewsList initialItems={allNewsInitialItems} initialHasMore={allNewsHasMore} />
+                ) : categoryNews && categoryNews.length > 0 ? (
+                  <NewsRowList items={categoryNews} />
                 ) : (
-                  <p className="text-neutral-500">No published articles in {activeCategory.name} yet.</p>
+                  <p className="text-neutral-500">No published articles in {activeCategory!.name} yet.</p>
                 )}
               </div>
 
-              {latestList.length > 0 && (
+              {!isAll && latestList.length > 0 && (
                 <div className="border-t border-black/10 pt-6">
-                  <h2 className="mb-3 font-headline text-xl font-bold">Latest Updates</h2>
-                  <NewsListRows items={latestList} />
+                  <h2 className="mb-3 font-headline text-xl font-bold text-accent">Latest Updates</h2>
+                  <NewsRowList items={latestList} />
+                  <div className="mt-3 flex justify-end">
+                    <Link
+                      href="/?category=all"
+                      className="rounded border border-accent px-4 py-1.5 text-sm text-accent hover:bg-accent hover:text-white"
+                    >
+                      More
+                    </Link>
+                  </div>
                 </div>
               )}
             </>
@@ -201,8 +198,8 @@ export default async function DashboardPage({
           )}
         </div>
 
-        <aside className="rounded-lg border border-black/10 p-4">
-          <h2 className="mb-3 font-headline text-lg font-bold">Most Viewed</h2>
+        <aside className="self-start rounded-lg border border-black/10 p-4">
+          <h2 className="mb-3 font-headline text-lg font-bold text-accent">Most Viewed</h2>
           <ol className="divide-y divide-black/10">
             {mostViewed.map((n, i) => (
               <li key={n.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
@@ -223,8 +220,18 @@ export default async function DashboardPage({
       {!activeCategory && (
         <section className="grid gap-6 border-t border-black/10 pt-8 md:grid-cols-4">
           <div className="space-y-4 md:col-span-3">
-            <h2 className="font-headline text-xl font-bold">Latest Updates</h2>
-            <NewsListRows items={latestList} />
+            <h2 className="font-headline text-xl font-bold text-accent">Latest Updates</h2>
+            <NewsRowList items={latestList} />
+            {!isAll && (
+              <div className="flex justify-end">
+                <Link
+                  href="/?category=all"
+                  className="rounded border border-accent px-4 py-1.5 text-sm text-accent hover:bg-accent hover:text-white"
+                >
+                  More
+                </Link>
+              </div>
+            )}
           </div>
         </section>
       )}

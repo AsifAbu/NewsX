@@ -63,7 +63,7 @@ export default async function NewsDetailsPage({
         {canPreview && (
           <Link
             href={`/post?edit=${news.id}`}
-            className="shrink-0 rounded border border-black/10 px-3 py-1.5 text-sm hover:border-accent hover:text-accent"
+            className="shrink-0 rounded border border-accent px-3 py-1.5 text-sm text-accent hover:bg-accent hover:text-white"
           >
             Edit
           </Link>
@@ -102,7 +102,13 @@ export default async function NewsDetailsPage({
       <SummarizeToggle body={news.body}>
         {session?.user && (
           <form action={toggleBookmarkAction.bind(null, news.id, news.slug)}>
-            <button className="rounded border border-black/10 px-3 py-1.5 text-sm hover:border-accent hover:text-accent">
+            <button
+              className={`rounded border px-3 py-1.5 text-sm transition ${
+                isBookmarked
+                  ? "border-accent bg-accent text-white"
+                  : "border-accent text-accent hover:bg-accent hover:text-white"
+              }`}
+            >
               {isBookmarked ? "★ Bookmarked" : "☆ Bookmark"}
             </button>
           </form>
@@ -110,7 +116,7 @@ export default async function NewsDetailsPage({
       </SummarizeToggle>
 
       <section className="space-y-4 border-t border-black/10 pt-6">
-        <h2 className="font-headline text-xl font-bold">Comments</h2>
+        <h2 className="font-headline text-xl font-bold text-accent">Comments</h2>
 
         {session?.user ? (
           <CommentForm newsId={news.id} slug={news.slug} />
@@ -140,34 +146,36 @@ export default async function NewsDetailsPage({
     </article>
 
     <aside>
-      <h2 className="font-headline text-xl font-bold">Read More</h2>
-      <ul className="mt-3 divide-y divide-black/10">
-        {moreNews.map((n) => (
-          <li key={n.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
-            {n.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={n.imageUrl}
-                alt={n.title}
-                className="h-16 w-20 shrink-0 rounded bg-neutral-100 object-contain"
-              />
-            )}
-            <div>
-              <Link href={`/news/${n.slug}`} className="text-sm font-medium leading-snug hover:text-accent">
-                {n.title}
-              </Link>
-              <p className="mt-1 text-xs text-neutral-400">{timeAgo(n.publishedAt)}</p>
-            </div>
-          </li>
-        ))}
-        {moreNews.length === 0 && (
-          <li className="text-sm text-neutral-500">No other articles in this category yet.</li>
-        )}
-      </ul>
-      <div className="mt-3 flex justify-end">
-        <Link href="/" className="text-sm font-medium text-accent hover:underline">
-          More..
-        </Link>
+      <div className="rounded-lg border border-black/10 p-4">
+        <h2 className="mb-3 font-headline text-xl font-bold text-accent">Read More</h2>
+        <ul className="divide-y divide-black/10">
+          {moreNews.map((n) => (
+            <li key={n.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
+              {n.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={n.imageUrl}
+                  alt={n.title}
+                  className="h-16 w-20 shrink-0 rounded bg-neutral-100 object-contain"
+                />
+              )}
+              <div>
+                <Link href={`/news/${n.slug}`} className="text-sm font-medium leading-snug hover:text-accent">
+                  {n.title}
+                </Link>
+                <p className="mt-1 text-xs text-neutral-400">{timeAgo(n.publishedAt)}</p>
+              </div>
+            </li>
+          ))}
+          {moreNews.length === 0 && (
+            <li className="py-3 text-sm text-neutral-500">No other articles in this category yet.</li>
+          )}
+        </ul>
+        <div className="mt-3 flex justify-end">
+          <Link href="/" className="text-sm font-medium text-accent hover:underline">
+            More..
+          </Link>
+        </div>
       </div>
     </aside>
     </div>
