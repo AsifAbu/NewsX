@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   // 'onnxruntime-node'"). Marking both as external makes Next.js skip
   // tracing/bundling them and include their real node_modules contents
   // (native binaries included) instead.
-  serverExternalPackages: ["onnxruntime-node", "@huggingface/transformers"],
+  serverExternalPackages: ["onnxruntime-node", "onnxruntime-common", "@huggingface/transformers"],
   // The local ONNX paraphrase models (~265MB each) are read from disk at
   // runtime via a dynamic path, not a static import, so Next.js won't trace
   // them into the serverless function bundle automatically. This makes sure
@@ -42,6 +42,7 @@ const nextConfig: NextConfig = {
       "./node_modules/onnxruntime-node/dist/**",
       "./node_modules/onnxruntime-node/lib/**",
       "./node_modules/onnxruntime-node/bin/napi-v6/linux/**",
+      "./node_modules/onnxruntime-common/**",
     ],
     "/news/[slug]": ["./models/**"], // Summarize
     "/news/*": [
@@ -49,6 +50,7 @@ const nextConfig: NextConfig = {
       "./node_modules/onnxruntime-node/dist/**",
       "./node_modules/onnxruntime-node/lib/**",
       "./node_modules/onnxruntime-node/bin/napi-v6/linux/**",
+      "./node_modules/onnxruntime-common/**",
     ],
   },
   turbopack: {
