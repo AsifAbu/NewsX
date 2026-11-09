@@ -15,7 +15,7 @@
   /* One font for all English (Latin) copy site-wide — headings and body text
      share this family; a different-language block (e.g. Bengali) may still
      use its own font, but English content must not mix fonts. */
-  --font-headline: var(--font-geist-sans);
+  --font-headline: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
 /* No dark mode for now — this is a newspaper-style design (white background,
