@@ -31,6 +31,11 @@ export default async function MySubmissionsPage() {
                 View live
               </Link>
             )}
+            {n.status !== "PUBLISHED" && (
+              <Link href={`/post?edit=${n.id}`} className="text-sm text-accent hover:underline">
+                Edit
+              </Link>
+            )}
           </li>
         ))}
         {submissions.length === 0 && <p className="text-neutral-500">No submissions yet.</p>}
