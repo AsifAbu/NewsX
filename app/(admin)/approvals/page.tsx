@@ -1,12 +1,29 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/require-role";
+import type { NewsStatus } from "@/app/generated/prisma/client";
 
-export default async function ApprovalsPage() {
+// Statuses an Admin would actually want to review in this queue. DRAFT isn't
+// submitted yet, and DELETED/HIDDEN are handled on the separate /archive page.
+const FILTERABLE_STATUSES = ["PENDING", "PUBLISHED", "REJECTED"] as const;
+const DEFAULT_STATUS: NewsStatus = "PENDING";
+
+function isFilterableStatus(value: string | undefined): value is (typeof FILTERABLE_STATUSES)[number] {
+  return !!value && (FILTERABLE_STATUSES as readonly string[]).includes(value);
+}
+
+export default async function ApprovalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   await requireRole(["ADMIN"]);
 
-  const pending = await prisma.news.findMany({
-    where: { status: "PENDING" },
+  const { status: statusParam } = await searchParams;
+  const status: NewsStatus = isFilterableStatus(statusParam) ? statusParam : DEFAULT_STATUS;
+
+  const news = await prisma.news.findMany({
+    where: { status },
     orderBy: { createdAt: "asc" },
     include: { categories: true, author: true },
   });
@@ -14,8 +31,21 @@ export default async function ApprovalsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <h1 className="font-headline text-2xl font-bold">Approval List</h1>
+      <nav className="flex gap-2 text-sm">
+        {FILTERABLE_STATUSES.map((s) => (
+          <Link
+            key={s}
+            href={`/approvals?status=${s}`}
+            className={`rounded px-3 py-1.5 ${
+              s === status ? "bg-accent text-white" : "bg-neutral-100 hover:bg-neutral-200"
+            }`}
+          >
+            {s}
+          </Link>
+        ))}
+      </nav>
       <ul className="divide-y divide-black/10">
-        {pending.map((n) => (
+        {news.map((n) => (
           <li key={n.id} className="py-3">
             <p className="text-xs uppercase text-neutral-500">
               {n.categories.map((c) => c.name).join(", ")}
@@ -28,7 +58,9 @@ export default async function ApprovalsPage() {
             </p>
           </li>
         ))}
-        {pending.length === 0 && <p className="text-neutral-500">Nothing pending.</p>}
+        {news.length === 0 && (
+          <p className="text-neutral-500">No {status.toLowerCase()} articles.</p>
+        )}
       </ul>
     </div>
   );
