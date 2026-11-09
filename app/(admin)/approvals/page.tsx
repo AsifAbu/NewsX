@@ -2,6 +2,11 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/require-role";
 import type { NewsStatus } from "@/app/generated/prisma/client";
+import { PAGE_SIZE, parsePage, totalPagesFor } from "@/lib/pagination";
+import { parseSort, toggle } from "@/lib/sort";
+import Pagination from "@/components/Pagination";
+import TableCard, { tableHeadRowClass, thClass, tdClass } from "@/components/TableCard";
+import SortableHeader from "@/components/SortableHeader";
 
 // Statuses an Admin would actually want to review in this queue. DRAFT isn't
 // submitted yet, and DELETED/HIDDEN are handled on the separate /archive page.
@@ -15,21 +20,37 @@ function isFilterableStatus(value: string | undefined): value is (typeof FILTERA
 export default async function ApprovalsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; page?: string; sort?: string }>;
 }) {
   await requireRole(["ADMIN"]);
 
-  const { status: statusParam } = await searchParams;
+  const { status: statusParam, page: pageParam, sort: sortParam } = await searchParams;
   const status: NewsStatus = isFilterableStatus(statusParam) ? statusParam : DEFAULT_STATUS;
+  const page = parsePage(pageParam);
+  // Oldest-first by default — this is a FIFO review queue, not a feed.
+  const sort = parseSort(sortParam, "asc");
 
-  const news = await prisma.news.findMany({
-    where: { status },
-    orderBy: { createdAt: "asc" },
-    include: { categories: true, author: true },
-  });
+  const [news, total] = await Promise.all([
+    prisma.news.findMany({
+      where: { status },
+      orderBy: { createdAt: sort },
+      include: { categories: true, author: true },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.news.count({ where: { status } }),
+  ]);
+
+  function buildHref(overrides: { page?: number; sort?: string }) {
+    const params = new URLSearchParams();
+    params.set("status", status);
+    params.set("sort", overrides.sort ?? sort);
+    params.set("page", String(overrides.page ?? page));
+    return `/approvals?${params.toString()}`;
+  }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="w-full space-y-4">
       <h1 className="font-headline text-2xl font-bold">Approval List</h1>
       <nav className="flex gap-2 text-sm">
         {FILTERABLE_STATUSES.map((s) => (
@@ -44,24 +65,56 @@ export default async function ApprovalsPage({
           </Link>
         ))}
       </nav>
-      <ul className="divide-y divide-black/10">
-        {news.map((n) => (
-          <li key={n.id} className="py-3">
-            <p className="text-xs uppercase text-neutral-500">
-              {n.categories.map((c) => c.name).join(", ")}
-            </p>
-            <Link href={`/news/${n.slug}`} className="font-medium hover:text-accent">
-              {n.title}
-            </Link>
-            <p className="text-xs text-neutral-500">
-              by {n.author.name} · submitted {n.createdAt.toLocaleDateString()}
-            </p>
-          </li>
-        ))}
-        {news.length === 0 && (
-          <p className="text-neutral-500">No {status.toLowerCase()} articles.</p>
-        )}
-      </ul>
+
+      <TableCard>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className={tableHeadRowClass}>
+              <th className={thClass}>Title</th>
+              <th className={thClass}>Category</th>
+              <th className={thClass}>Author</th>
+              <th className={thClass}>
+                <SortableHeader
+                  label="Submitted"
+                  direction={sort}
+                  href={buildHref({ sort: toggle(sort), page: 1 })}
+                />
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-black/10">
+            {news.map((n) => (
+              <tr key={n.id}>
+                <td className={tdClass}>
+                  <Link href={`/news/${n.slug}`} className="font-medium hover:text-accent">
+                    {n.title}
+                  </Link>
+                </td>
+                <td className={`${tdClass} text-neutral-600`}>
+                  {n.categories.map((c) => c.name).join(", ")}
+                </td>
+                <td className={`${tdClass} text-neutral-600`}>{n.author.name}</td>
+                <td className={`${tdClass} whitespace-nowrap text-neutral-500`}>
+                  {n.createdAt.toLocaleDateString()}
+                </td>
+              </tr>
+            ))}
+            {news.length === 0 && (
+              <tr>
+                <td className={tdClass} colSpan={4}>
+                  <span className="text-neutral-500">No {status.toLowerCase()} articles.</span>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </TableCard>
+
+      <Pagination
+        page={page}
+        totalPages={totalPagesFor(total)}
+        buildHref={(p) => buildHref({ page: p })}
+      />
     </div>
   );
 }

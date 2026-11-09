@@ -104,22 +104,55 @@ export function ListSkeleton({ rows = 6 }: { rows?: number }) {
   );
 }
 
-export function TableSkeleton({ rows = 6, cols = 4 }: { rows?: number; cols?: number }) {
+// Matches TableCard/Pagination's actual shape (full-width card, header bar,
+// divided rows, pill pagination) so the loading state doesn't jump/resize
+// once the real data arrives.
+export function TableSkeleton({
+  rows = 6,
+  cols = 4,
+  withSearch = false,
+  withTabs = false,
+}: {
+  rows?: number;
+  cols?: number;
+  withSearch?: boolean;
+  withTabs?: boolean;
+}) {
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <Skeleton className="h-7 w-40" />
-      <div className="space-y-3">
-        <div className="flex gap-4 border-b border-black/10 pb-2">
+    <div className="w-full space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Skeleton className="h-8 w-40" />
+        {withSearch && <Skeleton className="h-9 w-72 rounded-md" />}
+      </div>
+
+      {withTabs && (
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-20 rounded" />
+          <Skeleton className="h-8 w-24 rounded" />
+          <Skeleton className="h-8 w-20 rounded" />
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-lg border border-black/10 bg-white shadow-sm">
+        <div className="flex gap-6 bg-black/10 px-4 py-3">
           {Array.from({ length: cols }).map((_, i) => (
-            <Skeleton key={i} className="h-3 w-20" />
+            <Skeleton key={i} className="h-4 w-24 bg-black/20" />
           ))}
         </div>
-        {Array.from({ length: rows }).map((_, r) => (
-          <div key={r} className="flex gap-4">
-            {Array.from({ length: cols }).map((_, c) => (
-              <Skeleton key={c} className="h-4 w-20" />
-            ))}
-          </div>
+        <div className="divide-y divide-black/10">
+          {Array.from({ length: rows }).map((_, r) => (
+            <div key={r} className="flex gap-6 px-4 py-3">
+              {Array.from({ length: cols }).map((_, c) => (
+                <Skeleton key={c} className="h-4 w-24" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-1.5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-8 rounded-md" />
         ))}
       </div>
     </div>
