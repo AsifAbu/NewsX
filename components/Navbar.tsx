@@ -61,27 +61,40 @@ export default async function Navbar() {
       : Promise.resolve(null),
   ]);
 
-  const today = new Date().toLocaleDateString("en-US", {
+  // Full date (desktop, plenty of room) vs. a compact one (mobile): the full
+  // string plus weather used to wrap onto a second line that crowded the
+  // logo at narrow widths, so mobile gets a short, guaranteed-one-line date
+  // instead and drops the weather label entirely (its length varies
+  // unpredictably, from "Clear" to "Thunderstorm").
+  const now = new Date();
+  const todayFull = now.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
   });
+  const todayShort = now.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   return (
     <header className="relative border-b border-black/10 bg-white">
-      {/* Row 1: logo + date/weather */}
-      <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-4 py-3">
-        <Link href="/" className="font-headline text-2xl font-bold">
+      {/* Row 1: logo + date/weather. The date/weather block is a flex item
+          that can shrink (min-w-0) and never wraps (whitespace-nowrap), so
+          it can't crowd or wrap onto the logo at any width — mobile shows a
+          short date only, sm: and up show the full date + weather. */}
+      <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-3 px-4 py-3">
+        <Link href="/" className="shrink-0 font-headline text-2xl font-bold">
           News<span className="text-accent">X</span>
         </Link>
-        <div className="text-sm text-neutral-500">
-          {today}
-          {weather && (
-            <span className="ml-3">
-              {weather.temp}°C{weather.label ? ` · ${weather.label}` : ""}
-            </span>
-          )}
+        <div className="min-w-0 whitespace-nowrap text-sm text-neutral-500">
+          <span className="sm:hidden">{todayShort}</span>
+          <span className="hidden sm:inline">
+            {todayFull}
+            {weather && (
+              <span className="ml-3">
+                {weather.temp}°C{weather.label ? ` · ${weather.label}` : ""}
+              </span>
+            )}
+          </span>
         </div>
       </div>
 
