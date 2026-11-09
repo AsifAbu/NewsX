@@ -60,7 +60,7 @@ Your 4 roles and 5 pages cover the core loop well. Below are the gaps, grouped b
 
 ### Needs your decision (open questions)
 
-1. Can two Moderators edit the same draft at once, or is it single-owner?
+1. ~~Can two Moderators edit the same draft at once, or is it single-owner?~~ **Resolved:** any Moderator can edit any article, not single-owner. Still open: no locking/conflict detection — if two people save at the same time, the second write silently wins.
 2. Does Admin use the *same* Post Form (page 4) with an instant-publish option, or a separate flow? (Recommended: same form, role-gated "Publish" vs "Submit for approval" button.)
 3. Is comment moderation manual-only, or do you also want basic spam/profanity filtering?
 4. Any monetization (ads) planned, or content-only for now?
@@ -135,8 +135,11 @@ Build a web-based news portal where editorial staff (Moderators, Admin) publish 
 | Report a comment | ❌ | ✅ | ✅ | ✅ |
 | Create/submit news for approval | ❌ | ❌ | ✅ | ✅ (optional) |
 | View own submission status | ❌ | ❌ | ✅ | n/a |
+| **Edit any news article (not just own) — always resubmits for approval** | ❌ | ❌ | ✅ | ✅ |
 | Approve/reject submitted news | ❌ | ❌ | ❌ | ✅ |
 | Publish news directly | ❌ | ❌ | ❌ | ✅ |
+| **Delete / Hide a news article (reversible) and restore it** | ❌ | ❌ | ❌ | ✅ |
+| **View Deleted/Hidden news (Archive page or direct link)** | ❌ | ❌ | ❌ | ✅ |
 | Delete news / user / comment | ❌ | ❌ | ❌ | ✅ |
 | Promote user to Moderator | ❌ | ❌ | ❌ | ✅ |
 
@@ -144,12 +147,12 @@ Build a web-based news portal where editorial staff (Moderators, Admin) publish 
 
 **FR-1 Dashboard**
 
-- FR-1.1 Paginated/infinite-scroll list of published news, newest first: title, thumbnail, excerpt, category, publish date.
+- FR-1.1 Paginated/infinite-scroll list of published news, newest first: title, thumbnail, excerpt, category, publish date. The "Latest Updates" module specifically is a fixed 8 items, site-wide (never category-filtered), wherever it's shown (default Dashboard or a category page) — independent of FR-1.4's hero ordering and FR-1.6's Most Viewed, which each have their own ranking now.
 - FR-1.2 Filter by category/tag.
 - FR-1.3 Keyword search across title/body.
-- FR-1.4 Optional featured/breaking-news slot at top.
+- FR-1.4 Hero slot (1 featured + 4 secondary cards): ranked by **today's** most-viewed published articles (view count among articles published today, descending). Falls back to the next most-viewed articles overall (any date) to fill any of the 5 slots not covered by today's publishing — `News.viewCount` has no per-view timestamp, so this is an approximation via `publishedAt`, not a true rolling count.
 - FR-1.5 Logged-in users see content weighted by their interested categories.
-- FR-1.6 "Most Viewed" sidebar module: ranked list of articles by view count (requires a `News.view_count` field, incremented on each Details page view). See `docs/UIDesign.md`. The module's box sizes to its own content (fixed to its list length) and does not stretch to match a longer list next to it.
+- FR-1.6 "Most Viewed" sidebar module: ranked list of articles by view count among articles published in the **last 30 days** (same `publishedAt`-based approximation as FR-1.4; requires `News.view_count`, incremented on each Details page view). See `docs/UIDesign.md`. The module's box sizes to its own content (fixed to its list length) and does not stretch to match a longer list next to it.
 - FR-1.7 An **"All"** nav tab (alongside "Latest" and the category links) lists every published article, newest first, independent of any category filter. Loads 15 articles initially; a "More" button at the bottom-right loads 10 more per click, appended to the end of the list, until none remain (the button then shows disabled/greyed instead of disappearing). The "Latest Updates" module (FR-1.1's list, wherever it's shown) links to this tab via its own "More" button.
 
 **FR-2 News Details**
@@ -158,6 +161,8 @@ Build a web-based news portal where editorial staff (Moderators, Admin) publish 
 - FR-2.2 View/add comments (Registered Users+); report action on each comment.
 - FR-2.3 Bookmark/Save toggle (Registered Users+).
 - FR-2.4 When reached from the Approval List, show submission metadata (submitter, submitted date, status) and Approve/Reject actions (Admin only).
+- FR-2.5 An **"Update"** control (any news item, not just Pending ones) opens a dropdown: Admin sees Edit / Delete / Hide; a Moderator sees Edit only — both apply to **any** article, not just their own (see FR-4.5). Clicking Edit opens the Post Form (FR-4).
+- FR-2.6 When Admin is viewing an already-Deleted/Hidden article, a banner states its status and offers a one-click "Restore to Active". Deleted/Hidden is Admin-only visibility everywhere — Guests, Registered Users, and Moderators (including the original author) get a 404, and it's excluded from "My Submissions" (FR-3.5) too.
 
 **FR-3 Profile**
 
@@ -166,6 +171,7 @@ Build a web-based news portal where editorial staff (Moderators, Admin) publish 
 - FR-3.3 Forgot/reset password via emailed link — **Phase 2** (requires SMTP, not in the MVP architecture).
 - FR-3.4 Edit profile (name, avatar, interested categories).
 - FR-3.5 View own bookmarks and (Moderator) own submissions with status.
+- FR-3.6 Self-service `/profile` page: view own email, phone, joined date, comments-posted count, and — for Moderator/Admin only — role, news-authored count, and account status (a plain Registered User doesn't see those three; they're not meaningful for that role). Upload a profile picture here (Cloudinary, circular) — this is the only place it can be changed, and it then replaces the user's navbar icon everywhere once set.
 
 **FR-4 News Post Form**
 
@@ -173,7 +179,7 @@ Build a web-based news portal where editorial staff (Moderators, Admin) publish 
 - FR-4.2 Save as Draft.
 - FR-4.3 Moderator: "Submit for Approval" → status = Pending.
 - FR-4.4 Admin: "Publish" → status = Published immediately, or "Submit for Approval" if choosing peer review.
-- FR-4.5 Edit an existing Draft/Rejected item and resubmit.
+- FR-4.5 Edit an existing Draft/Rejected item and resubmit. **Any Moderator may edit any news article regardless of who authored it or its current status** (not limited to Draft/Rejected, and not limited to their own submissions) — saving always routes through Submit for Approval or Save Draft (never a direct publish, since the Publish button is Admin-only), so an edited **Published** article goes back to Pending until re-approved. Deleted/Hidden articles can't be edited by a non-admin.
 
 **FR-5 Approval List**
 
@@ -192,6 +198,11 @@ Build a web-based news portal where editorial staff (Moderators, Admin) publish 
 - FR-7.1 A site-wide footer appears on every page: an email/social-links/WhatsApp strip, and a bottom bar with the logo, links to FR-7.2's pages, and a copyright line.
 - FR-7.2 Six Guest-accessible pages, linked from the footer: About Us, Contact Us, Sitemap (links to the main pages and categories), Advertisement, Privacy Policy, Comment Policy. **Currently placeholder/dummy content** (contact email/WhatsApp number, addresses, legal text) — real copy is a follow-up item, not yet written.
 
+**FR-8 Archive (Admin-only, linked from the profile dropdown)**
+
+- FR-8.1 Table of every news item currently Deleted or Hidden: title (links to the article, viewable by Admin), date of the delete/hide operation, current status, and who did it (linked to their `/users/[id]` profile).
+- FR-8.2 Three controls per row to move that item to Active / Delete / Hide — the button matching the current status is disabled; moving to Active clears the archived timestamp/actor and the item drops off this list.
+
 ### 3. Non-Functional Requirements
 
 - **Security**: hashed passwords, CSRF protection, input sanitization on comments/news body (XSS), rate-limited login attempts, CAPTCHA on registration/comments.
@@ -203,13 +214,14 @@ Build a web-based news portal where editorial staff (Moderators, Admin) publish 
 - **Compliance**: Privacy Policy, Terms of Service, cookie consent if using analytics/ads.
 - **Perceived performance**: every route shows a shaped skeleton-loading placeholder (matching that page's real layout) during navigation/data fetch, instead of a blank screen or a generic spinner.
 - **Visual consistency**: one font family for all English-language UI and content site-wide (a different script, e.g. Bengali, may use its own font); a single accent color (red) used consistently for primary actions and key section headings.
+- **No duplicate submissions from a slow action**: every form-driven action (publish, delete, hide, bookmark, etc.) must disable its button(s) and show a loading state the moment it's clicked, and stay disabled until the action completes — a user must not be able to trigger the same mutation twice by clicking again before the first one finishes.
 
 ### 4. High-Level Data Model
 
 | Entity | Key fields |
 | --- | --- |
-| User | id, email, phone (optional), password\_hash, name, role, interested\_categories\[\] |
-| News | id, title, slug, body, image\_url, category\_id, author\_id, status (draft/pending/published/rejected), rejection\_reason, published\_at, view\_count |
+| User | id, email, phone (optional), password\_hash, name, role, avatar\_url (optional, Cloudinary URL), interested\_categories\[\] |
+| News | id, title, slug, body, image\_url, category\_id, author\_id, status (draft/pending/published/rejected/**deleted**/**hidden**), rejection\_reason, published\_at, view\_count, **archived\_at** (optional — set when status becomes deleted/hidden, cleared on restore), **archived\_by\_id** (optional, FK to User — who archived it) |
 | Category | id, name |
 | Comment | id, news\_id, user\_id, body, status (visible/reported/removed), created\_at |
 | Bookmark | id, user\_id, news\_id |
@@ -246,6 +258,8 @@ Build a web-based news portal where editorial staff (Moderators, Admin) publish 
 - As a Registered User, I want to comment on an article, so I can share my view.
   - AC: Comment requires login; empty/overlong comments rejected client- and server-side.
 - As a Registered User, I want to report an inappropriate comment, so moderators can act on it.
+- As a Registered User, I want to view my own profile (email, phone, joined date, comments posted) and upload a profile picture, so I can personalize my account.
+  - AC: Role, news-authored count, and account status are not shown to me (not relevant for my role) but are shown if I'm a Moderator or Admin viewing my own profile. My uploaded picture replaces my navbar icon everywhere, and can only be changed from this page.
 
 ### Moderator
 
@@ -253,6 +267,8 @@ Build a web-based news portal where editorial staff (Moderators, Admin) publish 
 - As a Moderator, I want to submit my article for approval, so Admin can review it before it goes live.
 - As a Moderator, I want to see the status of my submissions (Pending/Approved/Rejected), so I know what needs attention.
 - As a Moderator, I want to see the rejection reason and resubmit, so I can fix and republish my work.
+- As a Moderator, I want to edit any news article — not just my own — and resubmit it for approval, so the team can collaboratively fix mistakes in published or pending content.
+  - AC: The "Update" button on any article I can view opens a dropdown with only "Edit" (no Delete/Hide — Admin-only); saving always goes through Submit for Approval or Save Draft, never a direct publish; editing a Published article takes it back to Pending until an Admin re-approves it. I can't edit a Deleted/Hidden article.
 
 ### Admin
 
@@ -262,3 +278,6 @@ Build a web-based news portal where editorial staff (Moderators, Admin) publish 
 - As an Admin, I want to publish news directly without approval, so I can post time-sensitive content fast.
 - As an Admin, I want to delete a news article, user, or comment, so I can enforce content and conduct standards.
 - As an Admin, I want to promote a Registered User to Moderator, so the editorial team can grow.
+- As an Admin, I want to Delete or Hide a news article reversibly (not permanently erase it), so I can take down problem content while keeping the ability to restore it if needed.
+  - AC: Delete/Hide is available from the "Update" dropdown on any article; both record who did it and when; the item disappears from all public listings and from the original author's own My Submissions. I can restore it to Active from either the article page or the Archive page.
+- As an Admin, I want a single Archive page listing every Deleted/Hidden article with who archived it and when, so I can review and manage them in one place instead of hunting through the site.

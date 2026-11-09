@@ -2,7 +2,7 @@
 
 Goal for this phase: fastest path to a working MVP on free tooling, with every piece swappable later (S3, SMTP, custom domain) without a rewrite. Matches your plan: Neon for data, no email verification yet, image storage solved for free, local/Render now → real domain + S3 + SMTP/SMS later.
 
-**Status: implemented as planned below**, deployed on Vercel against a live Neon database. The one schema addition since this doc was written: `User.phone` (optional string) for the registration form — no architectural change, just a new column (migration `20261108095149_add_user_phone`).
+**Status: implemented as planned below**, deployed on Vercel against a live Neon database. Schema additions since this doc was written — no architectural change, just new columns/migrations: `User.phone`, `User.avatarUrl` (now actively used — self-service avatar upload via Cloudinary, see `docs/UIDesign.md`), and `News.status` gaining `DELETED`/`HIDDEN` plus `News.archivedAt`/`archivedById` for the Admin Archive feature (`docs/BRD-SRS-UserStories.md` FR-8). One operational note: Next.js Server Actions cap request bodies at 1MB by default, which silently broke avatar uploads until `next.config.ts` raised `experimental.serverActions.bodySizeLimit` to `"10mb"` to match Cloudinary's own 10MB check — see `docs/RULES.md`.
 
 ## Recommended stack
 

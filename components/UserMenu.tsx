@@ -47,9 +47,18 @@ export default function UserMenu({
               Bookmarks
             </Link>
             {canWrite && (
-              <Link href="/post" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-50">
-                Write
-              </Link>
+              <>
+                <Link href="/post" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-50">
+                  Write
+                </Link>
+                <Link
+                  href="/my-submissions"
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2 text-sm hover:bg-neutral-50"
+                >
+                  My Submissions
+                </Link>
+              </>
             )}
             {isAdmin && (
               <>

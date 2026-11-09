@@ -4,6 +4,36 @@ A web news portal — Guest/Registered User/Moderator/Admin roles, a moderation-
 
 Stack: Next.js (App Router) + TypeScript + Tailwind, Prisma on Neon (Postgres), Auth.js, Cloudinary for images. Full details in [`docs/Architecture.md`](docs/Architecture.md) and [`docs/RULES.md`](docs/RULES.md).
 
+## Features
+
+**Everyone (no account needed)**
+- Dashboard with a hero (today's most-viewed stories, falling back to all-time if fewer than 5 published today), a "Most Viewed" sidebar (last 30 days), and a fixed "Latest Updates" list (8 items, newest first)
+- An **All** tab listing every published article, newest first, 15 on load with a "More" button (+10 per click)
+- Keyword search, category filtering, and a human-readable Sitemap
+- Full article pages with comments (read-only) and a "Read More" related-articles box
+- Site-wide footer linking to About Us, Contact Us, Sitemap, Advertisement, Privacy Policy, and Comment Policy
+
+**Registered User**
+- Register (name, email, phone, password confirmed twice) and log in — failed signups keep what you typed and highlight only the field that's wrong
+- Self-service profile page: view your info, upload a circular avatar (shown in the navbar everywhere)
+- Bookmark/unbookmark articles, post and report comments
+- Set interested categories (used to weight the Dashboard)
+
+**Moderator** (everything above, plus)
+- Write news (Markdown body, image upload, optional URL-import and AI-rephrase helpers) and submit it for Admin approval
+- Track your own submissions and their status, with the rejection reason when applicable
+- Edit **any** news article — not just your own — which always resubmits it for approval
+
+**Admin** (everything above, plus)
+- Publish directly, or approve/reject Moderator submissions with a reason
+- Delete or Hide any news article — reversible, not permanent — and restore it later from the article page or the dedicated Archive page (which also shows who archived it and when)
+- Manage users (deactivate on a schedule, reactivate, delete) and a reported-comments queue
+- Promote a Registered User to Moderator (via the Neon console for now — see `docs/RULES.md`)
+
+**Under the hood**
+- Skeleton loading states on every route instead of blank screens
+- Every action button disables itself with a loading indicator while its request is in flight, so a slow action can't be double-clicked into running twice
+
 ## Prerequisites
 
 - **Node.js 20+** and npm
