@@ -12,6 +12,7 @@ import { approveNewsAction, updateNewsArchiveStatusAction } from "@/lib/actions/
 import { timeAgo } from "@/lib/format";
 import NewsUpdateMenu from "@/components/NewsUpdateMenu";
 import SubmitButton from "@/components/SubmitButton";
+import { NewsThumb } from "@/components/NewsThumb";
 
 export default async function NewsDetailsPage({
   params,
@@ -67,8 +68,8 @@ export default async function NewsDetailsPage({
   ]);
 
   return (
-    <div className="grid gap-8 md:grid-cols-5">
-    <article className="space-y-6 md:col-span-4">
+    <div className="grid gap-8 md:grid-cols-7">
+    <article className="space-y-6 md:col-span-5">
       <IncrementView newsId={news.id} />
 
       <p className="text-xs uppercase text-accent">{news.categories.map((c) => c.name).join(", ")}</p>
@@ -83,14 +84,7 @@ export default async function NewsDetailsPage({
         {news.viewCount} views
       </p>
 
-      {news.imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={news.imageUrl}
-          alt={news.title}
-          className="h-96 w-full rounded-lg bg-neutral-100 object-contain"
-        />
-      )}
+      <NewsThumb src={news.imageUrl} alt={news.title} className="h-96 w-full rounded-lg" />
 
       {isAdmin && isArchived && (
         <div className="space-y-2 rounded border border-red-300 bg-red-50 p-4">
@@ -176,22 +170,18 @@ export default async function NewsDetailsPage({
       </section>
     </article>
 
-    <aside>
+    <aside className="md:col-span-2">
       <div className="rounded-lg border border-black/10 p-4">
         <h2 className="mb-3 font-headline text-xl font-bold text-accent">Read More</h2>
         <ul className="divide-y divide-black/10">
           {moreNews.map((n) => (
             <li key={n.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
-              {n.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={n.imageUrl}
-                  alt={n.title}
-                  className="h-16 w-20 shrink-0 rounded bg-neutral-100 object-contain"
-                />
-              )}
-              <div>
-                <Link href={`/news/${n.slug}`} className="text-sm font-medium leading-snug hover:text-accent">
+              <NewsThumb src={n.imageUrl} alt={n.title} className="h-16 w-20 shrink-0 rounded" />
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/news/${n.slug}`}
+                  className="line-clamp-2 text-sm font-medium leading-snug hover:text-accent"
+                >
                   {n.title}
                 </Link>
                 <p className="mt-1 text-xs text-neutral-400">{timeAgo(n.publishedAt)}</p>

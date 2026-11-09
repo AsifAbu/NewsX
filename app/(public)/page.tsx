@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { timeAgo, excerpt } from "@/lib/format";
 import { NewsRowList } from "@/components/NewsRow";
 import AllNewsList from "@/components/AllNewsList";
+import { NewsThumb } from "@/components/NewsThumb";
 
 const ALL_PAGE_SIZE = 15;
 
@@ -199,14 +200,11 @@ export default async function DashboardPage({
                   href={`/news/${featured.slug}`}
                   className="group block overflow-hidden rounded-lg border border-black/10 md:col-span-2"
                 >
-                  {featured.imageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={featured.imageUrl}
-                      alt={featured.title}
-                      className="h-72 w-full bg-neutral-100 object-contain transition group-hover:opacity-90"
-                    />
-                  )}
+                  <NewsThumb
+                    src={featured.imageUrl}
+                    alt={featured.title}
+                    className="h-72 w-full transition group-hover:opacity-90"
+                  />
                   <div className="p-4">
                     <p className="text-xs uppercase text-accent">
                       {featured.categories.map((c) => c.name).join(", ")}
@@ -225,14 +223,11 @@ export default async function DashboardPage({
                     href={`/news/${secondary[0].slug}`}
                     className="group block overflow-hidden rounded-lg border border-black/10"
                   >
-                    {secondary[0].imageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={secondary[0].imageUrl}
-                        alt={secondary[0].title}
-                        className="aspect-square w-full bg-neutral-100 object-contain"
-                      />
-                    )}
+                    <NewsThumb
+                      src={secondary[0].imageUrl}
+                      alt={secondary[0].title}
+                      className="aspect-square w-full"
+                    />
                     <div className="p-3">
                       <h3 className="text-sm font-bold leading-snug group-hover:text-accent">
                         {secondary[0].title}
@@ -254,14 +249,7 @@ export default async function DashboardPage({
                     href={`/news/${n.slug}`}
                     className="group block overflow-hidden rounded-lg border border-black/10"
                   >
-                    {n.imageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={n.imageUrl}
-                        alt={n.title}
-                        className="aspect-square w-full bg-neutral-100 object-contain"
-                      />
-                    )}
+                    <NewsThumb src={n.imageUrl} alt={n.title} className="aspect-square w-full" />
                     <div className="p-3">
                       <h3 className="text-sm font-bold leading-snug group-hover:text-accent">{n.title}</h3>
                       <p className="mt-1 text-xs text-neutral-600">

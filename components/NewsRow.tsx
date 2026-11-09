@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { timeAgo, excerpt } from "@/lib/format";
+import { NewsThumb } from "@/components/NewsThumb";
 
 // Shared with app/(public)/page.tsx (category lists, Latest Updates) and
 // components/AllNewsList.tsx (the paginated "All" view) so every news list
@@ -29,14 +30,7 @@ export function NewsRow({ item }: { item: NewsRowItem }) {
         <p className="mt-1 text-sm text-neutral-600">{excerpt(item.body)}</p>
         <p className="mt-2 text-xs text-neutral-400">{timeAgo(publishedAt)}</p>
       </div>
-      {item.imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={item.imageUrl}
-          alt={item.title}
-          className="h-24 w-32 shrink-0 rounded bg-neutral-100 object-contain"
-        />
-      )}
+      <NewsThumb src={item.imageUrl} alt={item.title} className="h-24 w-32 shrink-0 rounded" />
     </Link>
   );
 }
