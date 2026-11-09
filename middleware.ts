@@ -9,9 +9,15 @@ import { NextRequest, NextResponse } from "next/server";
 // stamps that same nonce onto every script tag it injects.
 export function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  // React's dev-mode debugging tools (stack-trace reconstruction) call
+  // eval() — never used in production builds, per React's own warning — so
+  // 'unsafe-eval' is scoped to development only, not shipped to prod.
+  const scriptSrc = process.env.NODE_ENV === "development"
+    ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'`
+    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`;
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    scriptSrc,
     "style-src 'self' 'unsafe-inline'",
     // Pulled articles/avatars can point at any https image host (not just
     // Cloudinary), so img-src stays broad rather than allow-listing one host.
