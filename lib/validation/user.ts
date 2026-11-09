@@ -25,3 +25,9 @@ export const loginSchema = z.object({
   email: z.email("Please enter a valid email."),
   password: z.string().min(1, "Password is required."),
 });
+
+// A user may have zero interests (no boost applied anywhere), so no .min() —
+// unlike newsSchema.categoryIds, which requires at least one.
+export const interestedCategoriesSchema = z.object({
+  categoryIds: z.array(z.string()),
+});

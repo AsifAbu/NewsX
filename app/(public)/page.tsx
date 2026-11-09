@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { timeAgo, excerpt } from "@/lib/format";
 import { NewsRowList } from "@/components/NewsRow";
 import AllNewsList from "@/components/AllNewsList";
@@ -74,6 +75,25 @@ export default async function DashboardPage({
       include: { categories: true },
     });
     heroItems = [...heroItems, ...fallback];
+  }
+
+  // TC-RU-14: a logged-in user's interested categories give the hero a
+  // stable re-sort boost — articles matching one of their interests move
+  // first, but each group (matches / doesn't) keeps its existing
+  // viewCount-descending order. Guests (no session) and users with no
+  // preferences set see exactly the same heroItems as before this feature.
+  const session = await auth();
+  if (session?.user) {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { interestedCategoryIds: true },
+    });
+    const interestedIds = currentUser?.interestedCategoryIds ?? [];
+    if (interestedIds.length > 0) {
+      const matching = heroItems.filter((n) => n.categories.some((c) => interestedIds.includes(c.id)));
+      const rest = heroItems.filter((n) => !n.categories.some((c) => interestedIds.includes(c.id)));
+      heroItems = [...matching, ...rest];
+    }
   }
 
   const allNewsInitialItems =

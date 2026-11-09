@@ -2,17 +2,27 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/require-role";
 import AvatarUpload from "@/components/AvatarUpload";
+import SubmitButton from "@/components/SubmitButton";
+import { updateInterestedCategoriesAction } from "@/lib/actions/profile";
 
 // Self-service view of FR-3.4/3.5 — same fields/layout as the Admin user
 // detail page (app/(admin)/users/[id]/page.tsx), minus the Admin-only
 // Deactivate/Delete actions, plus the avatar upload (Admin's page has none).
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const session = await requireSession();
+  const { error } = await searchParams;
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: { _count: { select: { news: true, comments: true } } },
-  });
+  const [user, categories] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { _count: { select: { news: true, comments: true } } },
+    }),
+    prisma.category.findMany({ orderBy: { name: "asc" } }),
+  ]);
   if (!user) {
     // Session points at a user row that no longer exists (e.g. deleted
     // elsewhere mid-session).
@@ -76,6 +86,35 @@ export default async function ProfilePage() {
           </div>
         )}
       </dl>
+
+      {/* TC-RU-14: visible to every logged-in user (Registered User,
+          Moderator, Admin), unlike the Role/News-authored/Status rows
+          above which are gated to showEditorialInfo. */}
+      <div className="border-t border-black/10 pt-4">
+        <h2 className="font-headline text-lg font-bold text-accent">Interested Categories</h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          Articles in these categories are boosted to the top of the Dashboard&apos;s featured row.
+        </p>
+        {error && <p className="mt-2 text-sm text-red-600">{decodeURIComponent(error)}</p>}
+        <form action={updateInterestedCategoriesAction} className="mt-3 space-y-3">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {categories.map((c) => (
+              <label key={c.id} className="flex items-center gap-1.5 text-sm">
+                <input
+                  type="checkbox"
+                  name="categoryIds"
+                  value={c.id}
+                  defaultChecked={user.interestedCategoryIds.includes(c.id)}
+                />
+                {c.name}
+              </label>
+            ))}
+          </div>
+          <SubmitButton className="rounded bg-accent px-4 py-1.5 text-sm text-white hover:opacity-90">
+            Save preferences
+          </SubmitButton>
+        </form>
+      </div>
     </div>
   );
 }
