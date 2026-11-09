@@ -3,6 +3,7 @@
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import { requireRole } from "@/lib/require-role";
+import { safeFetchHtml } from "@/lib/safe-fetch";
 
 export type PulledArticle =
   | { title: string; imageUrl: string | null; body: string }
@@ -20,7 +21,7 @@ export async function pullArticleAction(url: string): Promise<PulledArticle> {
 
   let html: string;
   try {
-    const res = await fetch(parsedUrl.toString(), {
+    html = await safeFetchHtml(parsedUrl.toString(), {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -28,10 +29,8 @@ export async function pullArticleAction(url: string): Promise<PulledArticle> {
         "Accept-Language": "en-US,en;q=0.9",
       },
     });
-    if (!res.ok) return { error: `Could not fetch the page (HTTP ${res.status}).` };
-    html = await res.text();
-  } catch {
-    return { error: "Could not reach that URL." };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Could not reach that URL." };
   }
 
   try {

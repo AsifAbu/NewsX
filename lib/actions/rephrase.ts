@@ -2,8 +2,11 @@
 
 import { requireRole } from "@/lib/require-role";
 import { detectLanguage, getParaphraseModel, type Lang } from "@/lib/ai-models";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export type RephraseResult = { body: string } | { error: string };
+
+const MAX_INPUT_LENGTH = 20000;
 
 async function rephraseParagraph(lang: Lang, text: string): Promise<string> {
   const pipe = await getParaphraseModel(lang);
@@ -18,10 +21,16 @@ async function rephraseParagraph(lang: Lang, text: string): Promise<string> {
 }
 
 export async function rephraseAction(text: string): Promise<RephraseResult> {
-  await requireRole(["MODERATOR", "ADMIN"]);
+  const session = await requireRole(["MODERATOR", "ADMIN"]);
 
   if (!text || text.trim().length === 0) {
     return { error: "Nothing to rephrase yet — write or pull some content first." };
+  }
+  if (text.length > MAX_INPUT_LENGTH) {
+    return { error: "That article is too long to rephrase." };
+  }
+  if (!(await checkRateLimit("rephrase", session.user.id, 20, 5 * 60 * 1000))) {
+    return { error: "Too many requests. Please wait a bit and try again." };
   }
 
   const lang = detectLanguage(text);

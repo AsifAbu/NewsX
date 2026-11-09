@@ -24,6 +24,12 @@ export type NewsActionState = { error?: string } | undefined;
 
 async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLISHED") {
   const session = await requireRole(["MODERATOR", "ADMIN"]);
+  // Publishing directly is Admin-only — the UI hides the button from
+  // Moderators, but the action itself must enforce it too, since it's a
+  // plain exported Server Action callable with any status value.
+  if (status === "PUBLISHED" && session.user.role !== "ADMIN") {
+    redirect("/post?error=Only Admins can publish directly.");
+  }
 
   const parsed = newsSchema.safeParse({
     title: formData.get("title"),
@@ -82,6 +88,9 @@ async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | 
   // Admin-only to edit, same as the visibility rule everywhere else.
   if (session.user.role !== "ADMIN" && (existing.status === "DELETED" || existing.status === "HIDDEN")) {
     redirect("/post?error=That article is no longer available to edit.");
+  }
+  if (status === "PUBLISHED" && session.user.role !== "ADMIN") {
+    redirect(`/post?edit=${newsId}&error=Only Admins can publish directly.`);
   }
 
   const parsed = newsSchema.safeParse({
@@ -209,12 +218,20 @@ export async function incrementViewAction(newsId: string) {
 
 // Powers the "All" nav tab's paginated list (components/AllNewsList.tsx):
 // 15 on first load, then 10 more per "More" click, newest first.
+const MAX_LOAD_MORE_TAKE = 50;
+
 export async function loadMoreNewsAction(skip: number, take: number): Promise<NewsRowItem[]> {
+  // Callable directly with any value — clamp so a forged/replayed call can't
+  // force an unbounded scan of the news table.
+  const safeSkip = Number.isFinite(skip) && skip > 0 ? Math.floor(skip) : 0;
+  const safeTake =
+    Number.isFinite(take) && take > 0 ? Math.min(Math.floor(take), MAX_LOAD_MORE_TAKE) : 10;
+
   const items = await prisma.news.findMany({
     where: { status: "PUBLISHED" },
     orderBy: { publishedAt: "desc" },
-    skip,
-    take,
+    skip: safeSkip,
+    take: safeTake,
     include: { categories: true },
   });
 

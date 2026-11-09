@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { registerSchema } from "@/lib/validation/user";
 import { signIn, signOut } from "@/lib/auth";
 import { AuthError } from "next-auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export type ActionState = { error?: string } | undefined;
 
@@ -39,6 +40,10 @@ export async function registerAction(
     email: typeof raw.email === "string" ? raw.email : "",
     phone: typeof raw.phone === "string" ? raw.phone : "",
   };
+
+  if (!(await checkRateLimit("register", "global", 5, 60 * 60 * 1000))) {
+    return { error: "Too many registration attempts. Please try again later.", values };
+  }
 
   const parsed = registerSchema.safeParse(raw);
   if (!parsed.success) {
@@ -79,6 +84,11 @@ export async function loginAction(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const email = typeof formData.get("email") === "string" ? (formData.get("email") as string) : "unknown";
+  if (!(await checkRateLimit("login", email.toLowerCase(), 10, 5 * 60 * 1000))) {
+    return { error: "Too many login attempts. Please wait a few minutes and try again." };
+  }
+
   try {
     await signIn("credentials", {
       email: formData.get("email"),

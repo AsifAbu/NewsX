@@ -25,6 +25,8 @@ Read this before writing any code. It's the checklist a coding agent (or you) sh
 - Prisma Client is generated to `app/generated/prisma` (not `node_modules/@prisma/client`) — import from `@/app/generated/prisma/client`. Re-run `npx prisma generate` after any `schema.prisma` change, and `npx prisma migrate dev` once `DATABASE_URL` points at a real Neon database.
 - **next-auth is v5 (`5.0.0-beta.32`, Auth.js)**, not v4 — uses the `NextAuth(config)` → `{ handlers, auth, signIn, signOut }` export pattern in `lib/auth.ts`, not the old `[...nextauth]` options-object style.
 - Server Actions used as a `<button formAction={...}>` override take a plain `(formData)` signature; actions driven through `useActionState` take `(prevState, formData)`. Don't mix the two on the same function — see `lib/actions/news.ts` vs `lib/actions/auth.ts` for the split.
+- **Next.js Server Actions cap request bodies at 1MB by default** (`experimental.serverActions.bodySizeLimit` in `next.config.ts`, unset = 1MB) — separate from, and smaller than, any size check your own code does. A real photo upload routinely exceeds 1MB and fails at the framework level (HTTP 413) before your code runs. This project sets it to `"10mb"` to match `lib/cloudinary.ts`'s own validation; raise it further there (not per-action) if a bigger upload is ever needed.
+- **Restart the dev server after `prisma migrate dev` / `prisma generate` if one is already running.** A long-running `next dev` process keeps the Prisma client it loaded at startup in memory — regenerating the client on disk doesn't hot-reload into it, so you'll see `PrismaClientValidationError: ... Expected <Enum>` or `Unknown field ... for include statement` for anything added by the migration, even though the code and generated types are correct. This bit twice in one session (`NewsStatus.HIDDEN`, then `News.archivedBy`) before being written down here.
 
 ## Project structure
 
@@ -35,11 +37,12 @@ app/
                         # advertisement, privacy-policy, comment-policy) — accessible to Guests
   (auth)/              # Profile: register, login, logout
   (editorial)/         # News Post Form, My Submissions — Moderator + Admin
-  (admin)/             # Approval List, Users, Reports — Admin only
+  (admin)/             # Approval List, Users, Reports, Archive (Deleted/Hidden news) — Admin only
   api/                 # Only for things that truly need a REST endpoint (webhooks, etc.)
   */loading.tsx         # one per route segment — skeleton fallback, see Patterns below
 components/            # shared UI: Navbar, Footer, icons.tsx, Skeletons.tsx, NewsRow.tsx,
-                        # AllNewsList.tsx, forms, modals — see Patterns below
+                        # AllNewsList.tsx, SubmitButton.tsx, NewsUpdateMenu.tsx, AvatarUpload.tsx,
+                        # forms, modals — see Patterns below
 lib/
   db.ts                # single Prisma client instance (see Patterns below)
   auth.ts              # Auth.js config (NextAuth(config) → handlers/auth/signIn/signOut)
@@ -62,7 +65,9 @@ Route groups `(public)`, `(auth)`, `(editorial)`, `(admin)` are Next.js route gr
 - **`requireRole()` / `requireSession()` helpers** live in `lib/require-role.ts` (not `lib/auth.ts`) and are the first call in every Moderator/Admin action or page: `await requireRole(["ADMIN"])`, throws/redirects if it fails; `requireSession()` is the lighter "must be logged in, any role" check. Don't re-implement role checks ad hoc per route — that's how FR-6-style gaps happen.
 - **Zod schema per entity**, used to validate both Server Action input and any form data client-side (`lib/validation/*`). Never trust client-side validation alone. On a validation failure, return the field-level errors (and the non-sensitive submitted values) from the action so the form can highlight the failing field(s) and keep what the user typed — see `lib/actions/auth.ts`'s `registerAction`/`RegisterActionState` for the pattern. Never echo a password back.
 - **`loading.tsx` per route segment** for skeleton-loading UI (Next.js's built-in Suspense convention) — compose it from the shared primitives in `components/Skeletons.tsx` (`DashboardSkeleton`, `ArticleSkeleton`, `ListSkeleton`, `TableSkeleton`, `FormSkeleton`, `PostFormSkeleton`, `DetailSkeleton`) rather than writing an ad hoc spinner. Every route segment has one; add one for any new route too.
-- **Markdown pipeline**: `remark` → `rehype` → `rehype-sanitize` for every piece of user-authored content (news body, comments) before it's rendered. No raw `dangerouslySetInnerHTML` without sanitization.
+- **Markdown pipeline — not implemented yet.** No `remark`/`rehype`/`rehype-sanitize` dependency exists today; news body, comments, and excerpts render as plain JSX text (`{body}`), which React escapes automatically, so there's no XSS risk currently — but Markdown syntax (`**bold**`, `[link](url)`) also isn't actually formatted. If/when a Markdown renderer is added, it must go through `rehype-sanitize` (or equivalent) before any `dangerouslySetInnerHTML`, and never render raw unsanitized HTML from user input. Found stale during a 2026-11-08 security audit — this doc previously claimed the pipeline already existed.
+- **`components/SubmitButton.tsx`** instead of a plain `<button type="submit">` (or a `formAction`-override button) inside any `<form action={...}>`. It wraps React's `useFormStatus()`, so it disables itself and shows a spinner while its form is submitting — and since `useFormStatus` reports the whole form's pending state, every button in a multi-submit form (e.g. Save Draft / Submit for Approval / Publish) disables together regardless of which one was clicked. This is the fix for a real bug: a plain button gave no feedback during a slow Server Action (redirect + DB write + notify), so a second click fired the same action again and double-published an article. `CommentForm`, `RejectForm`, `DeactivateModal`, and `ReportCommentModal` already get equivalent protection via `useActionState`+`disabled={pending}` and don't need `SubmitButton` too.
+- **Revalidate the root layout, not just the page, when an action changes something the Navbar renders.** `revalidatePath("/some/page")` only invalidates that page's cache entry — the Navbar lives in `app/layout.tsx`, so a page-scoped revalidation never refreshes the bell badge, the avatar icon, or anything else rendered there; the user sees stale state until a hard reload. Add `revalidatePath("/", "layout")` too in that case — see `uploadAvatarAction` and `markNotificationReadAction` for the pattern. This bit as two separate reported bugs before being written down here.
 
 ## What to do
 
@@ -79,7 +84,7 @@ Route groups `(public)`, `(auth)`, `(editorial)`, `(admin)` are Next.js route gr
 ## What NOT to do (current MVP constraints — see `Architecture.md` / `CLAUDE.md` for why)
 
 - **No email/SMTP code.** No email verification, no password-reset emails, no approval/rejection email notifications. That status is shown in-app (My Submissions view) only. Don't add a "send email" call anywhere yet — Phase 2.
-- **No Admin Management UI (FR-6) yet.** Don't build a user-list or promote/suspend page. Role changes and user deletion happen manually in the Neon console at this stage.
+- **Admin Management UI (FR-6) already exists** (`app/(admin)/users/`, `lib/actions/users.ts` — deactivate/reactivate/delete, all `requireRole(["ADMIN"])`-gated). This section previously said not to build it; that's stale. Promotion (Registered User → Moderator) is still done manually in the Neon console.
 - **No writing files to local/server disk.** Vercel's filesystem is ephemeral — any uploaded file saved locally is lost on the next deploy. Images go to Cloudinary only.
 - **No WYSIWYG/rich-HTML editor.** Content authoring is Markdown only — don't pull in a rich text editor library.
 - **No new paid/non-free service** without checking it fits the "free tier only, for now" constraint in `Architecture.md`.
@@ -93,14 +98,14 @@ Route groups `(public)`, `(auth)`, `(editorial)`, `(admin)` are Next.js route gr
 - [ ] Input validated with a Zod schema
 - [ ] User-authored content (comments, news body) sanitized before render
 - [ ] No secrets in code or client bundle
-- [ ] Rate limiting considered for login and comment-posting endpoints (see SRS non-functional requirements)
+- [x] Rate limiting on login, registration, comment-posting, report-submission, and the AI summarize/rephrase actions via `lib/rate-limit.ts` (in-memory, per-instance — see its header comment for the serverless caveat; swap for Upstash/Redis if the app moves off hobby-tier traffic)
 
 ## Open items to resolve before they block code
 
 These are the still-open decisions from `CLAUDE.md` — don't silently assume an answer; ask, or implement the simplest reversible option and flag it in the PR/commit message:
-1. Single-owner vs. concurrent editing of a Moderator's draft
+1. Concurrent-edit conflict handling — any Moderator can edit any article now (confirmed, not open), but there's no locking or "someone else edited this since you opened it" check; a second save silently overwrites the first.
 2. Comment moderation: manual only, or also automated filtering
 3. Monetization — assume none unless told otherwise
 4. Target scale — assume "light/hobby traffic" defaults (no extra caching layer) unless told otherwise
 
-*(Resolved, not open: Admin's Post Form always shows both buttons — Publish and Submit for Approval — same form as Moderator's, role-gated. See `components/NewsForm.tsx`.)*
+*(Resolved, not open: Admin's Post Form always shows both buttons — Publish and Submit for Approval — same form as Moderator's, role-gated. See `components/NewsForm.tsx`. Also resolved: any Moderator may edit any news article, not just their own — see `lib/actions/news.ts`'s `updateNews`.)*

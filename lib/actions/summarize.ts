@@ -2,14 +2,23 @@
 
 import { requireSession } from "@/lib/require-role";
 import { detectLanguage, getParaphraseModel } from "@/lib/ai-models";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export type SummarizeResult = { summary: string } | { error: string };
 
+const MAX_INPUT_LENGTH = 20000;
+
 export async function summarizeAction(text: string): Promise<SummarizeResult> {
-  await requireSession();
+  const session = await requireSession();
 
   if (!text || text.trim().length === 0) {
     return { error: "Nothing to summarize." };
+  }
+  if (text.length > MAX_INPUT_LENGTH) {
+    return { error: "That article is too long to summarize." };
+  }
+  if (!(await checkRateLimit("summarize", session.user.id, 20, 5 * 60 * 1000))) {
+    return { error: "Too many requests. Please wait a bit and try again." };
   }
 
   const lang = detectLanguage(text);

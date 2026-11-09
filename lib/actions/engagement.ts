@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireRole, requireSession } from "@/lib/require-role";
 import { commentSchema } from "@/lib/validation/comment";
 import { notifyAdmins } from "@/lib/notify";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export type CommentActionState = { error?: string } | undefined;
 
@@ -15,6 +16,10 @@ export async function addCommentAction(
   formData: FormData
 ) {
   const session = await requireSession();
+
+  if (!(await checkRateLimit("comment", session.user.id, 10, 5 * 60 * 1000))) {
+    return { error: "You're commenting too quickly. Please wait a bit and try again." };
+  }
 
   const parsed = commentSchema.safeParse({ body: formData.get("body") });
   if (!parsed.success) {
@@ -35,6 +40,11 @@ export async function reportCommentAction(
   formData: FormData
 ) {
   const session = await requireSession();
+
+  if (!(await checkRateLimit("report", session.user.id, 10, 5 * 60 * 1000))) {
+    return { error: "Too many reports submitted. Please wait a bit and try again." };
+  }
+
   const reason = (formData.get("reason") as string | null)?.trim();
   if (!reason) {
     return { error: "Please say why you're reporting this comment." };
