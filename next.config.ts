@@ -80,6 +80,23 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  async headers() {
+    // Content-Security-Policy moved to middleware.ts: it needs a fresh nonce
+    // per request (script-src 'self' alone blocks Next's own inline
+    // streaming/hydration scripts — see middleware.ts for the full story).
+    // The other headers here are static and have no such requirement.
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
