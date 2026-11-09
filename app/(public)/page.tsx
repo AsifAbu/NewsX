@@ -64,17 +64,49 @@ export default async function DashboardPage({
       : Promise.resolve(null),
   ]);
 
-  // Fewer than 5 articles published today? Fill the remaining hero slots with
-  // the next most-viewed articles overall (any date), so the hero never looks sparse.
+  // Fewer than 5 articles published today? Cascade backwards one calendar day
+  // at a time — yesterday's most-viewed fill the remaining slots first, then
+  // the day before that, and so on — instead of jumping straight to an
+  // all-time-viewed pool. Each day's slice is capped to the day boundary, so
+  // a very-high-view article from a week ago never outranks a lower-view
+  // article from yesterday.
   let heroItems = todayTop;
   if (heroItems.length < 5) {
-    const fallback = await prisma.news.findMany({
-      where: { status: "PUBLISHED", id: { notIn: heroItems.map((n) => n.id) } },
-      orderBy: { viewCount: "desc" },
-      take: 5 - heroItems.length,
-      include: { categories: true },
+    const earliest = await prisma.news.aggregate({
+      where: { status: "PUBLISHED" },
+      _min: { publishedAt: true },
     });
-    heroItems = [...heroItems, ...fallback];
+    const earliestDay = earliest._min.publishedAt
+      ? new Date(
+          earliest._min.publishedAt.getFullYear(),
+          earliest._min.publishedAt.getMonth(),
+          earliest._min.publishedAt.getDate()
+        )
+      : null;
+
+    let dayOffset = 1;
+    const MAX_DAYS_BACK = 3650; // safety net; earliestDay normally stops the loop first
+    while (heroItems.length < 5 && earliestDay && dayOffset <= MAX_DAYS_BACK) {
+      const dayStart = new Date(todayStart);
+      dayStart.setDate(dayStart.getDate() - dayOffset);
+      if (dayStart < earliestDay) break; // no published articles exist before this day
+
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+
+      const dayTop = await prisma.news.findMany({
+        where: {
+          status: "PUBLISHED",
+          publishedAt: { gte: dayStart, lt: dayEnd },
+          id: { notIn: heroItems.map((n) => n.id) },
+        },
+        orderBy: { viewCount: "desc" },
+        take: 5 - heroItems.length,
+        include: { categories: true },
+      });
+      heroItems = [...heroItems, ...dayTop];
+      dayOffset += 1;
+    }
   }
 
   // TC-RU-14: a logged-in user's interested categories give the hero a
