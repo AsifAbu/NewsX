@@ -16,3 +16,14 @@ export async function markNotificationReadAction(notificationId: string) {
   // visibly clears until a hard reload.
   revalidatePath("/", "layout");
 }
+
+// "Mark all as read" on the /notifications page — the other way a user can
+// clear their unread state, alongside clicking notifications one by one.
+export async function markAllNotificationsReadAction() {
+  const session = await requireSession();
+  await prisma.notification.updateMany({
+    where: { userId: session.user.id, isRead: false },
+    data: { isRead: true },
+  });
+  revalidatePath("/", "layout");
+}
