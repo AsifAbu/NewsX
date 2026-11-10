@@ -50,7 +50,7 @@ export default function NotificationList({ groups }: { groups: Group[] }) {
                 </td>
               </tr>
               {g.items.map((n) => (
-                <tr key={n.id}>
+                <tr key={n.id} className={n.isRead ? "" : "bg-red-50"}>
                   <td className={tdClass}>
                     <Link
                       href={n.link}
