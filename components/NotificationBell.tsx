@@ -71,6 +71,15 @@ export default function NotificationBell({
                 <li className="px-3 py-4 text-center text-sm text-neutral-500">No notifications yet.</li>
               )}
             </ul>
+            <div className="flex justify-end border-t border-black/10 p-2">
+              <Link
+                href="/notifications"
+                onClick={() => setOpen(false)}
+                className="rounded px-2 py-1 text-xs font-medium text-accent hover:underline"
+              >
+                View all
+              </Link>
+            </div>
           </div>
         </>
       )}
