@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { requireSession } from "@/lib/require-role";
+import { markAllNotificationsReadAction } from "@/lib/actions/notifications";
 import NotificationList from "@/components/NotificationList";
+import SubmitButton from "@/components/SubmitButton";
 
 // "Today" / "Yesterday" / full date for anything older — same relative-label
 // convention a phone's own notification center uses.
@@ -43,8 +45,18 @@ export default async function NotificationsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <h1 className="font-headline text-2xl font-bold">Notifications</h1>
+    <div className="w-full space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="font-headline text-2xl font-bold">Notifications</h1>
+        <form action={markAllNotificationsReadAction}>
+          <SubmitButton
+            pendingLabel="Marking..."
+            className="rounded border border-accent px-3 py-1.5 text-sm text-accent hover:bg-accent hover:text-white"
+          >
+            Mark all as read
+          </SubmitButton>
+        </form>
+      </div>
       <NotificationList groups={groups} />
     </div>
   );
