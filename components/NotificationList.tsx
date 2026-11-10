@@ -27,7 +27,7 @@ export default function NotificationList({ groups }: { groups: Group[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className={tableHeadRowClass}>
-            <th className={thClass}>Notification</th>
+            <th className={thClass}>Title</th>
             <th className={thClass}>Time</th>
           </tr>
         </thead>
