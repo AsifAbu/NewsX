@@ -3,6 +3,8 @@ import { requireSession } from "@/lib/require-role";
 import { markAllNotificationsReadAction } from "@/lib/actions/notifications";
 import NotificationList from "@/components/NotificationList";
 import SubmitButton from "@/components/SubmitButton";
+import { PAGE_SIZE, parsePage, totalPagesFor } from "@/lib/pagination";
+import Pagination from "@/components/Pagination";
 
 // "Today" / "Yesterday" / full date for anything older — same relative-label
 // convention a phone's own notification center uses.
@@ -14,13 +16,25 @@ function dayLabel(date: Date, now: Date) {
   return date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 }
 
-export default async function NotificationsPage() {
+export default async function NotificationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const session = await requireSession();
 
-  const notifications = await prisma.notification.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const { page: pageParam } = await searchParams;
+  const page = parsePage(pageParam);
+
+  const [notifications, total] = await Promise.all([
+    prisma.notification.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.notification.count({ where: { userId: session.user.id } }),
+  ]);
 
   // Notifications already arrive newest-first, so partitioning them in place
   // by day label naturally produces day clusters in descending order, each
@@ -58,6 +72,11 @@ export default async function NotificationsPage() {
         </form>
       </div>
       <NotificationList groups={groups} />
+      <Pagination
+        page={page}
+        totalPages={totalPagesFor(total)}
+        buildHref={(p) => `/notifications?page=${p}`}
+      />
     </div>
   );
 }
