@@ -44,7 +44,7 @@ export default function NotificationList({ groups }: { groups: Group[] }) {
               <tr>
                 <td
                   colSpan={2}
-                  className="bg-neutral-50 px-4 py-2 text-xs font-bold uppercase tracking-wide text-neutral-500"
+                  className="bg-neutral-200 px-4 py-2 text-xs font-bold uppercase tracking-wide text-neutral-600"
                 >
                   {g.label}
                 </td>
