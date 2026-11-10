@@ -10,6 +10,8 @@ import SummarizeToggle from "@/components/SummarizeToggle";
 import { deleteCommentAction, toggleBookmarkAction } from "@/lib/actions/engagement";
 import { approveNewsAction, updateNewsArchiveStatusAction } from "@/lib/actions/news";
 import { timeAgo } from "@/lib/format";
+import { sanitizeNewsBody } from "@/lib/sanitize";
+import { htmlToPlainText } from "@/lib/richtext";
 import NewsUpdateMenu from "@/components/NewsUpdateMenu";
 import SubmitButton from "@/components/SubmitButton";
 import { NewsThumb } from "@/components/NewsThumb";
@@ -51,6 +53,10 @@ export default async function NewsDetailsPage({
   if (news.status !== "PUBLISHED" && !canPreview) notFound();
 
   const canUpdate = canPreview;
+  // Re-sanitized at render time too (not just on save) — cheap, and covers
+  // legacy/plain-text rows and any future write path that skips the gate.
+  const bodyHtml = sanitizeNewsBody(news.body);
+  const bodyText = htmlToPlainText(bodyHtml);
 
   const [isBookmarked, moreNews] = await Promise.all([
     session?.user
@@ -121,7 +127,7 @@ export default async function NewsDetailsPage({
         </div>
       )}
 
-      <SummarizeToggle body={news.body}>
+      <SummarizeToggle bodyHtml={bodyHtml} bodyText={bodyText}>
         {session?.user && (
           <form action={toggleBookmarkAction.bind(null, news.id, news.slug)}>
             <SubmitButton

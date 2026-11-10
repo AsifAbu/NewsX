@@ -12,8 +12,8 @@ Goal for this phase: fastest path to a working MVP on free tooling, with every p
 | Database | Neon (Postgres) free tier — already chosen | Serverless Postgres; identical connection from local dev and from the deployed app since it's always cloud-hosted — no local DB to install |
 | ORM | Prisma | Typed queries, easy migrations against Neon, maps directly to the User/News/Category/Comment/Bookmark/ApprovalLog model in the SRS |
 | Auth | Auth.js (NextAuth) — Credentials provider + bcrypt | Email/password login, no email verification required for now; `role` column on the User row drives Guest/Registered/Moderator/Admin access; verification can be added later with zero schema rework |
-| Long article/comment text | A Postgres `TEXT` column in the same Neon database | Postgres has no practical size limit on `TEXT` — no separate "text database" needed. Store the body as Markdown (simplest, safest) or sanitized HTML |
-| Rich text editing | Markdown (textarea + live preview, or a lightweight editor) | Render with `remark`/`rehype`, sanitize with `rehype-sanitize` — covers FR-4 authoring and the comment/body XSS non-functional requirement in one move |
+| Long article/comment text | A Postgres `TEXT` column in the same Neon database | Postgres has no practical size limit on `TEXT` — no separate "text database" needed. News body stores sanitized HTML; comments stay plain text |
+| Rich text editing | Tiptap editor (`components/RichTextEditor.tsx`) — Bold/Italic/Underline/Strike, H2/H3, lists, blockquote, link, inline image upload, undo/redo | Sanitize with `sanitize-html` (allowlist, `lib/sanitize.ts`) before every write and again before every render — covers FR-4 authoring (including inline images, not just the hero image) and the body XSS non-functional requirement in one move |
 | Images | Cloudinary free tier (25 GB storage/bandwidth) | You store only the returned image **URL** in Neon (`News.image_url`, `User.avatar_url`); the file itself never touches your server or database |
 | Hosting (app) | Vercel free tier (recommended) or Render free web service | Vercel is purpose-built for Next.js — no config, no sleep/cold-start, first-class Neon integration in its dashboard. Render works too, but its free web services sleep after inactivity |
 | Local dev | `next dev` pointed at the same Neon `DATABASE_URL` | Local machine and hosted app use the identical cloud database — nothing to seed or sync |
@@ -57,6 +57,6 @@ CLOUDINARY_API_SECRET=
 ## Confirmed decisions
 
 - **Framework:** Next.js (App Router) + TypeScript — one framework for all 5 pages plus backend logic, SSR for SEO.
-- **Content authoring:** Markdown, not WYSIWYG — far smaller XSS surface, less setup, still covers bold/italics/links/images/headings.
+- **Content authoring:** rich text via Tiptap (`components/RichTextEditor.tsx`), not Markdown — supports multiple in-body images (not just the hero image) plus bold/italics/underline/strike/headings/lists/blockquote/links. Stored and rendered as `sanitize-html`-allowlisted HTML (`lib/sanitize.ts`), not raw HTML — keeps the XSS surface bounded the same way the original Markdown-only decision intended. Supersedes the earlier "Markdown, not WYSIWYG" decision.
 - **Hosting:** Vercel free tier — no cold-sleep on inactivity (unlike Render's free web service), built-in Neon integration, deploys via `git push`.
 - **Images:** confirmed — browser uploads directly to Cloudinary (never touches Vercel's server/disk), Cloudinary returns a URL, that URL is saved in Neon's `News.image_url` / `User.avatar_url`, and pages render it with a plain `<img src>`. Works cleanly on Vercel's free tier specifically because no file is ever written to the app server's filesystem.

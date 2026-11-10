@@ -39,3 +39,90 @@ export function UserCircleIcon({ className = "h-6 w-6" }: IconProps) {
     </svg>
   );
 }
+
+// Icons below are for components/RichTextEditor.tsx's toolbar.
+
+export function ListBulletIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
+      />
+    </svg>
+  );
+}
+
+export function ListOrderedIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12" />
+      <text x="2" y="8.5" fontSize="6" fill="currentColor" stroke="none">
+        1
+      </text>
+      <text x="2" y="13.75" fontSize="6" fill="currentColor" stroke="none">
+        2
+      </text>
+      <text x="2" y="19" fontSize="6" fill="currentColor" stroke="none">
+        3
+      </text>
+    </svg>
+  );
+}
+
+export function QuoteIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 4v16M10 7h10M10 12h10M10 17h6" />
+    </svg>
+  );
+}
+
+export function LinkIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
+      />
+    </svg>
+  );
+}
+
+export function PhotoIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
+      />
+    </svg>
+  );
+}
+
+export function UndoIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+    </svg>
+  );
+}
+
+export function RedoIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3" />
+    </svg>
+  );
+}
+
+export function ClearFormatIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5h9l-4 14M11 5 4 19m7-7h9" />
+    </svg>
+  );
+}

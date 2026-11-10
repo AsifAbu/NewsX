@@ -12,6 +12,8 @@ export function timeAgo(date: Date | null | undefined): string {
 }
 
 export function excerpt(body: string, length = 140, suffix = "…"): string {
-  const clean = body.replace(/\s+/g, " ").trim();
+  // body may be rich-text HTML now — strip markup before trimming so card
+  // previews show plain text, not raw tags.
+  const clean = body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   return clean.length > length ? clean.slice(0, length).trimEnd() + suffix : clean;
 }

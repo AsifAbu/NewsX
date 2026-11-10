@@ -10,7 +10,9 @@ import {
 import { pullArticleAction } from "@/lib/actions/scrape";
 import { rephraseAction } from "@/lib/actions/rephrase";
 import ImageUpload from "@/components/ImageUpload";
+import RichTextEditor from "@/components/RichTextEditor";
 import SubmitButton from "@/components/SubmitButton";
+import { toBodyHtml, plainTextToHtml, htmlToPlainText } from "@/lib/richtext";
 
 type Category = { id: string; name: string };
 
@@ -40,7 +42,9 @@ export default function NewsForm({
   const [link, setLink] = useState(initialSourceUrl);
   const [title, setTitle] = useState(initialTitle);
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
-  const [body, setBody] = useState(initialBody);
+  // initialBody may be legacy plain text (pre-rich-text rows) or HTML — the
+  // editor always works in HTML.
+  const [body, setBody] = useState(() => toBodyHtml(initialBody));
   const [pullError, setPullError] = useState("");
   const [rephraseError, setRephraseError] = useState("");
   const [isPulling, startPulling] = useTransition();
@@ -56,19 +60,24 @@ export default function NewsForm({
       }
       setTitle(result.title);
       setImageUrl(result.imageUrl ?? "");
-      setBody(result.body);
+      // Scraper returns plain, blank-line-separated text — the editor needs HTML.
+      setBody(plainTextToHtml(result.body));
     });
   }
 
   function handleRephrase() {
     setRephraseError("");
     startRephrasing(async () => {
-      const result = await rephraseAction(body);
+      // The paraphrase model works on plain text, not markup — strip tags
+      // before sending, then rewrap the result as paragraphs. This replaces
+      // the body's text but not any formatting/images already added; the
+      // user re-applies those after rephrasing.
+      const result = await rephraseAction(htmlToPlainText(body));
       if ("error" in result) {
         setRephraseError(result.error);
         return;
       }
-      setBody(result.body);
+      setBody(plainTextToHtml(result.body));
     });
   }
 
@@ -81,7 +90,7 @@ export default function NewsForm({
     : publishDirectlyAction;
 
   return (
-    <form action={draftAction} className="mx-auto max-w-2xl space-y-3">
+    <form action={draftAction} className="w-full space-y-4">
       <h1 className="font-headline text-2xl font-bold">{isEditing ? "Edit News" : "Write News"}</h1>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -159,15 +168,8 @@ export default function NewsForm({
       <input type="hidden" name="imageUrl" value={imageUrl} />
       <ImageUpload value={imageUrl} onChange={setImageUrl} />
 
-      <textarea
-        name="body"
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        rows={10}
-        placeholder="Write the article in Markdown..."
-        required
-        className="w-full rounded border border-black/10 p-2 text-sm"
-      />
+      <input type="hidden" name="body" value={body} />
+      <RichTextEditor value={body} onChange={setBody} />
 
       <div className="space-y-1">
         <div className="flex items-center gap-2">

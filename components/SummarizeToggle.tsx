@@ -4,10 +4,14 @@ import { useState, useTransition } from "react";
 import { summarizeAction } from "@/lib/actions/summarize";
 
 export default function SummarizeToggle({
-  body,
+  bodyHtml,
+  bodyText,
   children,
 }: {
-  body: string;
+  // Pre-sanitized HTML, safe to render directly — see lib/sanitize.ts.
+  bodyHtml: string;
+  // Plain-text version, for the AI model (which shouldn't see markup).
+  bodyText: string;
   children?: React.ReactNode;
 }) {
   const [summary, setSummary] = useState<string | null>(null);
@@ -21,7 +25,7 @@ export default function SummarizeToggle({
     }
     setError("");
     startTransition(async () => {
-      const result = await summarizeAction(body);
+      const result = await summarizeAction(bodyText);
       if ("error" in result) {
         setError(result.error);
         return;
@@ -51,7 +55,10 @@ export default function SummarizeToggle({
           <p className="text-neutral-800">{summary}</p>
         </div>
       ) : (
-        <div className="prose max-w-none whitespace-pre-wrap text-neutral-800">{body}</div>
+        <div
+          className="prose max-w-none text-neutral-800"
+          dangerouslySetInnerHTML={{ __html: bodyHtml }}
+        />
       )}
     </div>
   );

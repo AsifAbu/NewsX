@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { newsSchema, rejectSchema } from "@/lib/validation/news";
 import { requireRole } from "@/lib/require-role";
+import { sanitizeNewsBody } from "@/lib/sanitize";
 import { notifyAdmins, notifyUser } from "@/lib/notify";
 import type { NewsRowItem } from "@/components/NewsRow";
 
@@ -34,7 +35,9 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
   const parsed = newsSchema.safeParse({
     title: formData.get("title"),
     categoryIds: formData.getAll("categoryIds"),
-    body: formData.get("body"),
+    // Sanitized before validation/storage — the authoritative XSS gate for
+    // rich-text content authored in RichTextEditor.
+    body: sanitizeNewsBody(String(formData.get("body") ?? "")),
     imageUrl: formData.get("imageUrl") ?? "",
     sourceUrl: formData.get("sourceUrl") ?? "",
   });
@@ -96,7 +99,7 @@ async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | 
   const parsed = newsSchema.safeParse({
     title: formData.get("title"),
     categoryIds: formData.getAll("categoryIds"),
-    body: formData.get("body"),
+    body: sanitizeNewsBody(String(formData.get("body") ?? "")),
     imageUrl: formData.get("imageUrl") ?? "",
     sourceUrl: formData.get("sourceUrl") ?? "",
   });
