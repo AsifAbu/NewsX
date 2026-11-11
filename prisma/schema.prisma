@@ -161,6 +161,17 @@ model Bookmark {
   @@unique([userId, newsId])
 }
 
+// One row per site visit (every page load, Guests included) - a plain
+// timestamp log rather than a running counter, so Today/This Week/This
+// Month/All-time can each be a simple date-ranged count instead of needing
+// separate counters reset on a schedule.
+model SiteVisit {
+  id        String   @id @default(cuid())
+  visitedAt DateTime @default(now())
+
+  @@index([visitedAt])
+}
+
 model ApprovalLog {
   id        String           @id @default(cuid())
   decision  ApprovalDecision

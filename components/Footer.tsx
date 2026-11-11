@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 
 // Dummy/placeholder contact details and social links — swap for the real
 // NewsX accounts and numbers later (see CLAUDE.md "original data add later").
@@ -53,7 +54,9 @@ function SocialIcon({ label }: { label: string }) {
   }
 }
 
-export default function Footer() {
+export default async function Footer() {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN";
   const year = new Date().getFullYear();
 
   return (
@@ -97,6 +100,11 @@ export default function Footer() {
                 {l.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link href="/traffic" className="hover:text-white">
+                Site Traffic
+              </Link>
+            )}
           </nav>
 
           <div className="text-center text-xs text-neutral-400 sm:text-right">
