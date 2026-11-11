@@ -26,6 +26,7 @@ export default function NewsForm({
   initialImageUrl = "",
   initialBody = "",
   initialSourceUrl = "",
+  initialNewsSource = "",
 }: {
   categories: Category[];
   isAdmin: boolean;
@@ -36,12 +37,14 @@ export default function NewsForm({
   initialImageUrl?: string;
   initialBody?: string;
   initialSourceUrl?: string;
+  initialNewsSource?: string;
 }) {
   const isEditing = Boolean(newsId);
   const [useLink, setUseLink] = useState(Boolean(initialSourceUrl));
   const [link, setLink] = useState(initialSourceUrl);
   const [title, setTitle] = useState(initialTitle);
   const [imageUrl, setImageUrl] = useState(initialImageUrl);
+  const [newsSource, setNewsSource] = useState(initialNewsSource);
   // initialBody may be legacy plain text (pre-rich-text rows) or HTML — the
   // editor always works in HTML.
   const [body, setBody] = useState(() => toBodyHtml(initialBody));
@@ -60,8 +63,10 @@ export default function NewsForm({
       }
       setTitle(result.title);
       setImageUrl(result.imageUrl ?? "");
-      // Scraper returns plain, blank-line-separated text — the editor needs HTML.
-      setBody(plainTextToHtml(result.body));
+      // Scraper now returns already-sanitized HTML (images/lists/formatting
+      // preserved) — set it directly, no plain-text conversion needed.
+      setBody(result.body);
+      setNewsSource(result.sourceName);
     });
   }
 
@@ -164,6 +169,20 @@ export default function NewsForm({
         required
         className="w-full rounded border border-black/10 p-2 text-sm"
       />
+
+      <div className="space-y-1">
+        <input
+          name="newsSource"
+          value={newsSource}
+          onChange={(e) => setNewsSource(e.target.value)}
+          placeholder="News Source (e.g. World Economic Forum: Future of Jobs Report 2025)"
+          className="w-full rounded border border-black/10 p-2 text-sm"
+        />
+        <p className="text-xs text-neutral-500">
+          Shown on the article as &ldquo;Source: ...&rdquo;. Auto-filled when you Pull from a link —
+          edit freely either way. Leave blank to show no source line.
+        </p>
+      </div>
 
       <input type="hidden" name="imageUrl" value={imageUrl} />
       <ImageUpload value={imageUrl} onChange={setImageUrl} />

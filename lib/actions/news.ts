@@ -40,6 +40,7 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
     body: sanitizeNewsBody(String(formData.get("body") ?? "")),
     imageUrl: formData.get("imageUrl") ?? "",
     sourceUrl: formData.get("sourceUrl") ?? "",
+    newsSource: formData.get("newsSource") ?? "",
   });
   if (!parsed.success) {
     redirect(`/post?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input.")}`);
@@ -52,6 +53,7 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
       body: parsed.data.body,
       imageUrl: parsed.data.imageUrl || null,
       sourceUrl: parsed.data.sourceUrl || null,
+      newsSource: parsed.data.newsSource || null,
       categories: { connect: parsed.data.categoryIds.map((id) => ({ id })) },
       authorId: session.user.id,
       status,
@@ -102,6 +104,7 @@ async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | 
     body: sanitizeNewsBody(String(formData.get("body") ?? "")),
     imageUrl: formData.get("imageUrl") ?? "",
     sourceUrl: formData.get("sourceUrl") ?? "",
+    newsSource: formData.get("newsSource") ?? "",
   });
   if (!parsed.success) {
     redirect(`/post?edit=${newsId}&error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input.")}`);
@@ -114,6 +117,7 @@ async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | 
       body: parsed.data.body,
       imageUrl: parsed.data.imageUrl || null,
       sourceUrl: parsed.data.sourceUrl || null,
+      newsSource: parsed.data.newsSource || null,
       categories: { set: parsed.data.categoryIds.map((id) => ({ id })) },
       status,
       rejectionReason: null,

@@ -91,6 +91,10 @@ model News {
   body            String
   imageUrl        String?
   sourceUrl       String?
+  // Public "Source: X" credit line on News Details — editor-typed when
+  // writing manually, auto-filled (editable) from the pulled page's
+  // og:site_name when using "Pull" from a link. Not the internal author.
+  newsSource      String?
   status          NewsStatus @default(DRAFT)
   rejectionReason String?
   viewCount       Int        @default(0)

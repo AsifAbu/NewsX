@@ -28,7 +28,6 @@ export default async function NewsDetailsPage({
     where: { slug },
     include: {
       categories: true,
-      author: true,
       comments: {
         where: { status: { not: "REMOVED" } },
         orderBy: { createdAt: "desc" },
@@ -84,7 +83,9 @@ export default async function NewsDetailsPage({
         {canUpdate && <NewsUpdateMenu newsId={news.id} canArchive={isAdmin} />}
       </div>
       <p className="text-sm text-neutral-500">
-        By {news.author.name} ·{" "}
+        By <span className="font-medium text-neutral-700">NewsX</span>
+        {news.newsSource && <> · Source: {news.newsSource}</>}
+        {" · "}
         {news.publishedAt?.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
         {" · "}
         {news.viewCount} views

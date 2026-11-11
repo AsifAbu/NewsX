@@ -35,6 +35,7 @@ export default async function PostFormPage({
         initialImageUrl={existing.imageUrl ?? ""}
         initialBody={existing.body}
         initialSourceUrl={existing.sourceUrl ?? ""}
+        initialNewsSource={existing.newsSource ?? ""}
       />
     );
   }
