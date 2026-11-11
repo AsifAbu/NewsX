@@ -84,3 +84,17 @@ export function chunkByWords(text: string, maxWords: number): string[] {
   flushCurrent();
   return chunks;
 }
+
+// Defends against a degenerate generation - this small model, when pushed
+// past the point where it has genuine content left, can fall into repeating
+// a short subword over and over with no spaces (e.g. "...emundundundund...")
+// rather than stopping. Cuts the text right before the first such run
+// instead of showing it. A 2-8 character chunk repeated 4+ times in a row
+// is not something real prose produces.
+const RUNAWAY_REPEAT = /(.{2,8})\1{3,}/;
+
+export function stripRunawayRepetition(text: string): string {
+  const match = text.match(RUNAWAY_REPEAT);
+  if (!match || match.index === undefined) return text;
+  return text.slice(0, match.index).trim();
+}

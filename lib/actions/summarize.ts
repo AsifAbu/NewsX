@@ -6,6 +6,7 @@ import {
   getParaphraseModel,
   countWords,
   chunkByWords,
+  stripRunawayRepetition,
   SAFE_WORDS_PER_PASS,
   type Lang,
 } from "@/lib/ai-models";
@@ -15,28 +16,42 @@ export type SummarizeResult = { summary: string } | { error: string };
 
 const MAX_INPUT_LENGTH = 20000;
 
-// 1 "line" ~= 22 words (confirmed with the user) - turns the 7-15 line
-// summary requirement into a word budget the model can actually be given.
+// 1 "line" ~= 22 words (confirmed with the user). The line-count target was
+// lowered from 7-15 to 4-6 after direct testing against this model: pushed
+// past ~120-140 words it visibly degrades (fragmented clauses, then filler
+// words like "কিন্তু" repeated as connective tissue, before full token-level
+// repetition at the extreme) - 7-15 lines (154-330 words) is not something
+// this small on-device checkpoint can reliably produce.
 const WORDS_PER_LINE = 22;
-const MIN_LINES = 7;
-const MAX_LINES = 15;
-const SHORT_SUMMARY_LINES = 3;
+const MIN_LINES = 4;
+const MAX_LINES = 6;
+const SHORT_SUMMARY_LINES = 2;
 const CHUNK_SUMMARY_WORDS = 60; // per-chunk compression target before the reduce pass
 
-async function runSummarizePass(lang: Lang, text: string, minWords: number, maxWords: number): Promise<string> {
+// Floors are aims, not guarantees - length_penalty does the work of biasing
+// toward the fuller end, min_new_tokens just nudges it. The final pass gets
+// a real nudge toward the line-count target; the chunk-reduce pass (an
+// intermediate compression, not the user-facing output) only needs a small
+// one. runSummarizePass clamps whichever is passed below its own max, so a
+// short body's smaller ceiling can never create an invalid min > max call.
+const FINAL_MIN_NEW_TOKENS = 100;
+const CHUNK_MIN_NEW_TOKENS = 20;
+
+async function runSummarizePass(lang: Lang, text: string, maxWords: number, minNewTokensAim: number): Promise<string> {
   const pipe = await getParaphraseModel(lang);
   const input = lang === "en" ? `summarize: ${text}` : text;
+  const maxNewTokens = Math.round(maxWords * 1.6);
+  const minNewTokens = Math.min(minNewTokensAim, Math.max(0, maxNewTokens - 10));
   const output = await pipe(input, {
-    // ~1.3-1.6 subword tokens per word on this tokenizer for short news
-    // prose - generous on purpose so generation isn't cut off before the
-    // word-budget trim below ever runs.
-    min_new_tokens: Math.round(minWords * 1.3),
-    max_new_tokens: Math.round(maxWords * 1.6),
+    min_new_tokens: minNewTokens,
+    max_new_tokens: maxNewTokens,
+    length_penalty: 2.0,
+    no_repeat_ngram_size: 3,
     num_beams: lang === "en" ? 5 : 4,
     early_stopping: true,
   });
   const result = Array.isArray(output) ? output[0] : output;
-  return (result as { generated_text: string }).generated_text.trim();
+  return stripRunawayRepetition((result as { generated_text: string }).generated_text.trim());
 }
 
 // Trims to at most maxWords, cutting at the last full sentence that still
@@ -64,7 +79,7 @@ async function reduceToSinglePass(lang: Lang, text: string): Promise<string> {
     const chunks = chunkByWords(combined, SAFE_WORDS_PER_PASS[lang]);
     const chunkSummaries: string[] = [];
     for (const chunk of chunks) {
-      chunkSummaries.push(await runSummarizePass(lang, chunk, 20, CHUNK_SUMMARY_WORDS));
+      chunkSummaries.push(await runSummarizePass(lang, chunk, CHUNK_SUMMARY_WORDS, CHUNK_MIN_NEW_TOKENS));
     }
     combined = chunkSummaries.join(" ");
   }
@@ -91,12 +106,11 @@ export async function summarizeAction(text: string): Promise<SummarizeResult> {
   const targetMaxWords = isShortBody
     ? SHORT_SUMMARY_LINES * WORDS_PER_LINE
     : Math.min(MAX_LINES * WORDS_PER_LINE, Math.max(MIN_LINES * WORDS_PER_LINE, Math.round(bodyWords * 0.25)));
-  const targetMinWords = isShortBody ? Math.round(targetMaxWords * 0.6) : MIN_LINES * WORDS_PER_LINE;
 
   try {
     const passText =
       bodyWords <= SAFE_WORDS_PER_PASS[lang] ? text : await reduceToSinglePass(lang, text);
-    let summary = await runSummarizePass(lang, passText, targetMinWords, targetMaxWords);
+    let summary = await runSummarizePass(lang, passText, targetMaxWords, FINAL_MIN_NEW_TOKENS);
     summary = trimToWordBudget(summary, targetMaxWords);
 
     if (!summary) {

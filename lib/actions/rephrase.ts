@@ -2,7 +2,15 @@
 
 import { JSDOM } from "jsdom";
 import { requireRole } from "@/lib/require-role";
-import { detectLanguage, getParaphraseModel, countWords, chunkByWords, SAFE_WORDS_PER_PASS, type Lang } from "@/lib/ai-models";
+import {
+  detectLanguage,
+  getParaphraseModel,
+  countWords,
+  chunkByWords,
+  stripRunawayRepetition,
+  SAFE_WORDS_PER_PASS,
+  type Lang,
+} from "@/lib/ai-models";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export type RephraseResult = { body: string } | { error: string };
@@ -19,11 +27,12 @@ async function rephraseChunk(lang: Lang, text: string): Promise<string> {
     // Sized to the input, not a fixed cap - the model needs room to
     // paraphrase in full without truncating.
     max_new_tokens: Math.max(256, Math.round(countWords(text) * 2)),
+    no_repeat_ngram_size: 3,
     num_beams: lang === "en" ? 5 : 4,
     early_stopping: true,
   });
   const result = Array.isArray(output) ? output[0] : output;
-  return (result as { generated_text: string }).generated_text.trim();
+  return stripRunawayRepetition((result as { generated_text: string }).generated_text.trim());
 }
 
 async function rephraseBlockText(lang: Lang, text: string): Promise<string> {
