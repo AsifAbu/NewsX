@@ -23,18 +23,25 @@ export default async function TrafficPage() {
   await requireRole(["ADMIN"]);
 
   const now = new Date();
-  const [today, thisWeek, thisMonth, allTime] = await Promise.all([
-    prisma.siteVisit.count({ where: { visitedAt: { gte: startOfToday(now) } } }),
-    prisma.siteVisit.count({ where: { visitedAt: { gte: startOfWeek(now) } } }),
-    prisma.siteVisit.count({ where: { visitedAt: { gte: startOfMonth(now) } } }),
-    prisma.siteVisit.count(),
-  ]);
+  const [today, thisWeek, thisMonth, allTime, uniqueToday, uniqueThisWeek, uniqueThisMonth, uniqueAllTime] =
+    await Promise.all([
+      prisma.siteVisit.count({ where: { visitedAt: { gte: startOfToday(now) } } }),
+      prisma.siteVisit.count({ where: { visitedAt: { gte: startOfWeek(now) } } }),
+      prisma.siteVisit.count({ where: { visitedAt: { gte: startOfMonth(now) } } }),
+      prisma.siteVisit.count(),
+      // Prisma has no direct COUNT(DISTINCT col) aggregate - groupBy the
+      // visitor key and take the row count instead.
+      prisma.siteVisit.groupBy({ by: ["visitorKey"], where: { visitedAt: { gte: startOfToday(now) } } }),
+      prisma.siteVisit.groupBy({ by: ["visitorKey"], where: { visitedAt: { gte: startOfWeek(now) } } }),
+      prisma.siteVisit.groupBy({ by: ["visitorKey"], where: { visitedAt: { gte: startOfMonth(now) } } }),
+      prisma.siteVisit.groupBy({ by: ["visitorKey"] }),
+    ]);
 
   const stats = [
-    { label: "Today", value: today },
-    { label: "This Week", value: thisWeek },
-    { label: "This Month", value: thisMonth },
-    { label: "All Time", value: allTime },
+    { label: "Today", value: today, unique: uniqueToday.length },
+    { label: "This Week", value: thisWeek, unique: uniqueThisWeek.length },
+    { label: "This Month", value: thisMonth, unique: uniqueThisMonth.length },
+    { label: "All Time", value: allTime, unique: uniqueAllTime.length },
   ];
 
   return (
@@ -50,6 +57,9 @@ export default async function TrafficPage() {
             <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">{s.label}</p>
             <p className="mt-1 font-headline text-3xl font-bold text-accent">
               {s.value.toLocaleString()}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              {s.unique.toLocaleString()} unique visitor{s.unique === 1 ? "" : "s"}
             </p>
           </div>
         ))}

@@ -168,8 +168,13 @@ model Bookmark {
 model SiteVisit {
   id        String   @id @default(cuid())
   visitedAt DateTime @default(now())
+  // The visiting account's id when logged in, otherwise a random anonymous
+  // id from a long-lived cookie (lib/actions/traffic.ts) - lets unique
+  // visitor counts be computed without storing anything identifying.
+  visitorKey String
 
   @@index([visitedAt])
+  @@index([visitorKey])
 }
 
 model ApprovalLog {
