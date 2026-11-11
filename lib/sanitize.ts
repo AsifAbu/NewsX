@@ -19,6 +19,13 @@ export function sanitizeNewsBody(body: string): string {
     },
     allowedSchemes: ["http", "https"],
     allowedSchemesByTag: { img: ["http", "https"] },
+    // Disallowed tags are normally unwrapped with their text kept - fine for
+    // a stray <div>/<span> wrapping real paragraph text, but figcaption is
+    // always a photo caption/credit, never body prose, so its text should
+    // be dropped with the tag instead of left as an orphaned, unspaced
+    // sentence next to the image (seen on pulled articles - this leaked into
+    // both the rendered body and the AI summarizer/rephraser).
+    nonTextTags: ["script", "style", "figcaption"],
     transformTags: {
       a: sanitizeHtmlLib.simpleTransform("a", { target: "_blank", rel: "noopener noreferrer" }),
       h1: "h2",

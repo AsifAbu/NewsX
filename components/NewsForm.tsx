@@ -12,7 +12,7 @@ import { rephraseAction } from "@/lib/actions/rephrase";
 import ImageUpload from "@/components/ImageUpload";
 import RichTextEditor from "@/components/RichTextEditor";
 import SubmitButton from "@/components/SubmitButton";
-import { toBodyHtml, plainTextToHtml, htmlToPlainText } from "@/lib/richtext";
+import { toBodyHtml } from "@/lib/richtext";
 
 type Category = { id: string; name: string };
 
@@ -73,16 +73,14 @@ export default function NewsForm({
   function handleRephrase() {
     setRephraseError("");
     startRephrasing(async () => {
-      // The paraphrase model works on plain text, not markup — strip tags
-      // before sending, then rewrap the result as paragraphs. This replaces
-      // the body's text but not any formatting/images already added; the
-      // user re-applies those after rephrasing.
-      const result = await rephraseAction(htmlToPlainText(body));
+      // rephraseAction works on the HTML directly and rephrases only the
+      // text blocks, leaving images (and anything else non-text) in place.
+      const result = await rephraseAction(body);
       if ("error" in result) {
         setRephraseError(result.error);
         return;
       }
-      setBody(plainTextToHtml(result.body));
+      setBody(result.body);
     });
   }
 
