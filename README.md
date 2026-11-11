@@ -73,14 +73,6 @@ npx prisma generate         # generates the typed client
 npx tsx prisma/seed.ts      # optional: adds sample categories, users, and articles
 ```
 
-Seeded test accounts (all use password `password123`):
-
-| Role | Email |
-| --- | --- |
-| Admin | `admin@newsx.test` |
-| Moderator | `moderator@newsx.test` |
-| Registered User | `reader@newsx.test` |
-
 ## 4. Local AI models (optional — only for the "Rephrase" feature)
 
 The Post Form's Rephrase button uses two small AI models that run locally (no external API, no cost) — but they're ~265MB each and not stored in this repo. Without them, the rest of the app works normally; only clicking Rephrase will show an error.
