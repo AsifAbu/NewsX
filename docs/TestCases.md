@@ -58,6 +58,11 @@ Legend: Priority — High (blocks release) / Medium / Low.
 | TC-RU-24 | Upload a profile picture | Logged in, on `/profile` | Click the avatar, choose an image file | Image uploads, the circular avatar on the page updates immediately, and the navbar's account icon also shows it (replacing the generic user icon) | High |
 | TC-RU-25 | Upload an oversized/invalid profile picture | Logged in, on `/profile` | Choose a non-image file, or one over the size limit | Clear inline error shown; no avatar change | Medium |
 | TC-RU-26 | Notification mark-as-read clears the indicator | Logged in, at least one unread notification | Click a notification in the bell dropdown | The bell's unread badge count decreases and that notification's unread dot/bold styling clears immediately, without a page reload | Medium |
+| TC-RU-27 | Summarize shows above the full article | Logged in, on News Details | Click "Summarize" | Summary box appears above the article; full body remains visible below it (not hidden/replaced) | High |
+| TC-RU-28 | Hide Summary keeps the body visible | Summary currently shown | Click "Hide Summary" | Summary box disappears; full body remains visible throughout (unaffected) | Medium |
+| TC-RU-29 | Summary length matches the 4-6 line target | Article body is a normal (non-short) length, no images | Click "Summarize" | Summary is roughly 4-6 lines, fluent, with no repeated/garbled text | High |
+| TC-RU-30 | Short article gets a proportionally short summary | Article body is shorter than ~4 lines worth of content | Click "Summarize" | Summary is proportionally short (~2 lines), not padded or forced to the 4-6 line band | Medium |
+| TC-RU-31 | Photo captions don't leak into the summary | Article was pulled from a source with an in-body image caption/credit line | Click "Summarize" | Summary reflects only real article content; no stray caption/credit text appears | Medium |
 
 ## Moderator
 
@@ -76,6 +81,11 @@ Legend: Priority — High (blocks release) / Medium / Low.
 | TC-MOD-11 | Moderator's Update dropdown shows Edit only | Logged in as Moderator, viewing any article they can see | Click "Update" | Dropdown shows only "Edit" — no Delete/Hide | High |
 | TC-MOD-12 | Attempt to edit a Deleted/Hidden article | An article exists with status Deleted or Hidden | Navigate directly to its edit URL (`/post?edit=<id>`), or try to reach it via Update | Article isn't visible/reachable; attempting the edit URL directly redirects with an error, no changes saved | High |
 | TC-MOD-13 | Double-click Publish does not duplicate | Logged in as Admin (or Submit for Approval as Moderator), in the Post Form | Click Publish/Submit twice in quick succession | Only one article is created; the second click has no effect because the button(s) disabled and showed a loading state after the first click | High |
+| TC-MOD-14 | Rephrase preserves images | Draft/article body in the Post Form contains at least one inline image | Click "Rephrase" | Paragraph/heading text is reworded; the image stays in its same position, untouched | High |
+| TC-MOD-15 | Pull brings in multiple body images | Source URL's article has more than one photo (a photo essay/gallery) | Click "Pull" | All non-decorative in-body images are inserted into the rich text editor near their original paragraph, not just the header image | High |
+| TC-MOD-16 | Pull with a single-photo source | Source URL's article has exactly one photo on the page (used as the hero/og:image) | Click "Pull" | That photo populates the Image URL/header field; body has no inline image duplicate (expected, not a bug) | Medium |
+| TC-MOD-17 | News Source field auto-fills on Pull | Pulling from a URL with an `og:site_name` meta tag | Click "Pull" | "News Source" field is pre-filled with the site name; editable before submit | Medium |
+| TC-MOD-18 | Manually/Pull-authored article credits the submitting editor, not the approver | Moderator writes/pulls and submits an article; a different Admin approves it | View the published article | "By NewsX" byline and Source line shown; the approving Admin is not credited as author | High |
 
 ## Admin
 
@@ -101,6 +111,11 @@ Legend: Priority — High (blocks release) / Medium / Low.
 | TC-ADM-00 | Promote a user via Neon console (MVP interim) | Registered User account exists | In Neon console, edit that user's row and change `role` to `moderator` | On next login/session refresh, user has Moderator access (can reach the Post Form) | High |
 | TC-ADM-14 **(Phase 2 UI)** | Promote a user to Moderator via Admin Management | Registered User account exists; FR-6 Admin Management UI built | Open user in Admin Management, click "Promote to Moderator" | User's role updates; they gain access to the Post Form | Low |
 | TC-ADM-15 | Non-Admin attempts an Admin-only action | Logged in as Registered User or Moderator | Call/navigate to any Admin-only action (delete user, approve, promote) | Access denied (403) in every case | High |
+| TC-ADM-16 | View Site Traffic stats | Logged in as Admin | Open `/traffic` (via the footer link) | Today/This Week/This Month/All Time visit counts shown, each with a "unique visitors" line below it | High |
+| TC-ADM-17 | Site Traffic link only visible to Admin | Logged in as Registered User or Moderator, or as Guest | View the footer | "Site Traffic" link is not shown | High |
+| TC-ADM-18 | Visit count increases per page view | Note the current Today count on `/traffic` | Visit a few different pages, then reload `/traffic` | Today's total visit count has increased by the number of pages visited | Medium |
+| TC-ADM-19 | Unique visitor count does not double-count one browser | Note the current Today unique-visitor count | Visit multiple pages in the same browser session | Total visits increases per page; Today's unique-visitor count does not increase beyond 1 for that session | Medium |
+| TC-ADM-20 | Non-Admin cannot reach Site Traffic directly | Logged in as Registered User or Moderator | Navigate directly to `/traffic` | Access denied (403/redirect) | High |
 
 ## Cross-cutting / Non-Functional
 
@@ -156,12 +171,16 @@ Source: user stories as listed in [`BRD-SRS-UserStories.md`](BRD-SRS-UserStories
 | Registered User | View own profile (role-based field visibility) | TC-RU-22, TC-RU-23 |
 | Registered User | Upload a profile picture | TC-RU-24, TC-RU-25 |
 | Registered User | Notification mark-as-read clears the indicator | TC-RU-26 |
+| Registered User | Summarize an article (AI) | TC-RU-27, TC-RU-28, TC-RU-29, TC-RU-30, TC-RU-31 |
 | Moderator | Write a news article and save as Draft | TC-MOD-01 |
 | Moderator | Submit an article for approval | TC-MOD-02, TC-MOD-03 |
 | Moderator | See status of own submissions | TC-MOD-04 |
 | Moderator | See rejection reason and resubmit | TC-MOD-05, TC-MOD-06 |
 | Moderator | Edit any news article (not just own) and resubmit | TC-MOD-10, TC-MOD-11, TC-MOD-12 |
 | Moderator | (negative: no approval/publish/delete/hide rights) | TC-MOD-07, TC-MOD-08, TC-MOD-09 |
+| Moderator | Rephrase an article's text with AI (images untouched) | TC-MOD-14 |
+| Moderator | Pull an article from a source URL (text, image(s), source name) | TC-MOD-15, TC-MOD-16, TC-MOD-17 |
+| Moderator | Published article credits the submitting editor, not the approver | TC-MOD-18 |
 | Cross-cutting | No duplicate submissions from a slow action | TC-MOD-13, TC-NF-09 |
 | Admin | See list of pending submissions | TC-ADM-01, TC-ADM-02 |
 | Admin | Open a submission's full preview before deciding | TC-ADM-03 |
@@ -171,5 +190,6 @@ Source: user stories as listed in [`BRD-SRS-UserStories.md`](BRD-SRS-UserStories
 | Admin | Review archived news on the Archive page | TC-ADM-09e |
 | Admin | Delete a news article, user, or comment | TC-ADM-09, TC-ADM-10, TC-ADM-11 |
 | Admin | Promote a Registered User to Moderator | TC-ADM-00 (MVP, Neon console), TC-ADM-14 (Phase 2 UI) |
-| Admin | (negative: non-Admin blocked from Admin actions) | TC-ADM-15 |
+| Admin | (negative: non-Admin blocked from Admin actions) | TC-ADM-15, TC-ADM-20 |
+| Admin | View site traffic (visits and unique visitors, by period) | TC-ADM-16, TC-ADM-17, TC-ADM-18, TC-ADM-19 |
 | Cross-cutting | Security / performance / accessibility (not a user story, but required by the SRS NFRs) | TC-NF-01 – TC-NF-09 |

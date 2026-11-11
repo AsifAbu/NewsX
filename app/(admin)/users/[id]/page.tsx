@@ -5,6 +5,7 @@ import { deleteUserAction, reactivateUserAction } from "@/lib/actions/users";
 import DeactivateModal from "@/components/DeactivateModal";
 import SubmitButton from "@/components/SubmitButton";
 
+
 export default async function UserDetailPage({
   params,
   searchParams,
@@ -12,7 +13,7 @@ export default async function UserDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireRole(["ADMIN"]);
+  const session = await requireRole(["ADMIN"]);
   const { id } = await params;
   const { error } = await searchParams;
 
@@ -63,27 +64,31 @@ export default async function UserDetailPage({
       </dl>
 
       <div className="flex gap-2 pt-2">
-        {user.deactivatedAt ? (
-          <form action={reactivateUserAction.bind(null, user.id)}>
-            <SubmitButton
-              pendingLabel="Reactivating..."
-              className="rounded border border-green-700 px-3 py-1.5 text-sm text-green-700 hover:bg-green-50"
-            >
-              Reactivate
-            </SubmitButton>
-          </form>
-        ) : (
-          <DeactivateModal userId={user.id} />
+        {session.user.id !== user.id && (
+          user.deactivatedAt ? (
+            <form action={reactivateUserAction.bind(null, user.id)}>
+              <SubmitButton
+                pendingLabel="Reactivating..."
+                className="rounded border border-green-700 px-3 py-1.5 text-sm text-green-700 hover:bg-green-50"
+              >
+                Reactivate
+              </SubmitButton>
+            </form>
+          ) : (
+            <DeactivateModal userId={user.id} />
+          )
         )}
 
-        <form action={deleteUserAction.bind(null, user.id)}>
-          <SubmitButton
-            pendingLabel="Deleting..."
-            className="rounded border border-red-600 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-          >
-            Delete
-          </SubmitButton>
-        </form>
+        {user.role !== "ADMIN" && (
+          <form action={deleteUserAction.bind(null, user.id)}>
+            <SubmitButton
+              pendingLabel="Deleting..."
+              className="rounded border border-red-600 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+            >
+              Delete
+            </SubmitButton>
+          </form>
+        )}
       </div>
     </div>
   );

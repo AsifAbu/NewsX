@@ -46,28 +46,37 @@ export default async function UsersPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-headline text-2xl font-bold">Users</h1>
 
-        <form action="/users" method="GET" className="flex">
-          <input type="hidden" name="sort" value={sort} />
-          <div className="flex overflow-hidden rounded-md border border-black/10">
-            <input
-              type="text"
-              name="q"
-              defaultValue={q}
-              placeholder="Search by email"
-              className="w-56 px-3 py-1.5 text-sm outline-none"
-            />
-            <button
-              type="submit"
-              aria-label="Search"
-              className="flex items-center justify-center bg-accent px-3 text-white hover:opacity-90"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-                <circle cx="11" cy="11" r="7" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-            </button>
-          </div>
-        </form>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/users/create"
+            className="whitespace-nowrap rounded bg-accent px-3 py-1.5 text-sm text-white hover:opacity-90"
+          >
+            + Create user
+          </Link>
+
+          <form action="/users" method="GET" className="flex">
+            <input type="hidden" name="sort" value={sort} />
+            <div className="flex overflow-hidden rounded-md border border-black/10">
+              <input
+                type="text"
+                name="q"
+                defaultValue={q}
+                placeholder="Search by email"
+                className="w-56 px-3 py-1.5 text-sm outline-none"
+              />
+              <button
+                type="submit"
+                aria-label="Search"
+                className="flex items-center justify-center bg-accent px-3 text-white hover:opacity-90"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
       <TableCard>
