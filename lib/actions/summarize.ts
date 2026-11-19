@@ -46,7 +46,10 @@ async function runSummarizePass(lang: Lang, text: string, maxWords: number, minN
     min_new_tokens: minNewTokens,
     max_new_tokens: maxNewTokens,
     length_penalty: 2.0,
-    no_repeat_ngram_size: 3,
+    // Bangla uses agglutinative morphology — function words and morphemes
+    // legitimately repeat, so the ngram-block that works for English causes
+    // beam search to exhaust valid continuations and emit garbage fragments.
+    no_repeat_ngram_size: lang === "en" ? 3 : 0,
     num_beams: lang === "en" ? 5 : 4,
     early_stopping: true,
   });
@@ -111,10 +114,11 @@ export async function summarizeAction(text: string): Promise<SummarizeResult> {
     const neededChunking = bodyWords > SAFE_WORDS_PER_PASS[lang];
     const passText = neededChunking ? await reduceToSinglePass(lang, text) : text;
     let summary = await runSummarizePass(lang, passText, targetMaxWords, FINAL_MIN_NEW_TOKENS);
-    // Second polish pass: the model re-reads the full concatenated summary so it
-    // can smooth out any rough joins or detached sentences from the chunked reduce.
-    // Only needed when chunks were stitched together — short articles skip it.
-    if (neededChunking) {
+    // Second polish pass: the model re-reads the full concatenated summary to
+    // smooth rough joins from chunking. English only — the Bangla model is a
+    // paraphrase checkpoint (not a summarizer), so a second pass on its output
+    // compounds degradation rather than fixing it.
+    if (neededChunking && lang === "en") {
       summary = await runSummarizePass(lang, summary, targetMaxWords, FINAL_MIN_NEW_TOKENS);
     }
     summary = trimToWordBudget(summary, targetMaxWords);
