@@ -46,10 +46,11 @@ async function runSummarizePass(lang: Lang, text: string, maxWords: number, minN
     min_new_tokens: minNewTokens,
     max_new_tokens: maxNewTokens,
     length_penalty: 2.0,
-    // Bangla uses agglutinative morphology — function words and morphemes
-    // legitimately repeat, so the ngram-block that works for English causes
-    // beam search to exhaust valid continuations and emit garbage fragments.
-    no_repeat_ngram_size: lang === "en" ? 3 : 0,
+    // Bangla: 2 is the sweet spot — 3 was too tight (beam search exhausted
+    // valid continuations and emitted garbage fragments), 0 was too loose
+    // (whole phrases repeated freely). Blocking bigrams stops pathological
+    // repetition while still allowing individual function words to recur.
+    no_repeat_ngram_size: lang === "en" ? 3 : 2,
     num_beams: lang === "en" ? 5 : 4,
     early_stopping: true,
   });
@@ -70,6 +71,28 @@ function trimToWordBudget(text: string, maxWords: number): string {
     truncated.lastIndexOf("।")
   );
   return lastSentenceEnd > truncated.length * 0.5 ? truncated.slice(0, lastSentenceEnd + 1) : truncated;
+}
+
+// Removes near-duplicate sentences from model output caused by chunked
+// reduce stitching similar content from different sections together.
+// Uses Jaccard word-overlap: a sentence sharing >60% of its unique words
+// with one already kept is dropped. Applied to Bangla only since the
+// paraphrase-bn model doesn't suppress cross-chunk repetition on its own.
+function deduplicateSentences(text: string): string {
+  const sentences = text.split(/(?<=[।.!?])\s+/).map((s) => s.trim()).filter(Boolean);
+  if (sentences.length <= 1) return text;
+  const kept: string[] = [];
+  for (const sentence of sentences) {
+    const words = new Set(sentence.toLowerCase().replace(/[।.!?,]/g, "").split(/\s+/).filter(Boolean));
+    const isDuplicate = kept.some((prev) => {
+      const prevWords = new Set(prev.toLowerCase().replace(/[।.!?,]/g, "").split(/\s+/).filter(Boolean));
+      const intersection = [...words].filter((w) => prevWords.has(w)).length;
+      const union = new Set([...words, ...prevWords]).size;
+      return union > 0 && intersection / union > 0.6;
+    });
+    if (!isDuplicate) kept.push(sentence);
+  }
+  return kept.join(" ");
 }
 
 // Map-reduce: the model can't see more than ~512 input tokens in one pass,
@@ -120,6 +143,9 @@ export async function summarizeAction(text: string): Promise<SummarizeResult> {
     // compounds degradation rather than fixing it.
     if (neededChunking && lang === "en") {
       summary = await runSummarizePass(lang, summary, targetMaxWords, FINAL_MIN_NEW_TOKENS);
+    }
+    if (lang === "bn") {
+      summary = deduplicateSentences(summary);
     }
     summary = trimToWordBudget(summary, targetMaxWords);
 
