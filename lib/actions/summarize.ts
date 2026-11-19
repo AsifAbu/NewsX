@@ -76,8 +76,8 @@ function trimToWordBudget(text: string, maxWords: number): string {
 // Removes near-duplicate sentences from model output caused by chunked
 // reduce stitching similar content from different sections together.
 // Uses Jaccard word-overlap: a sentence sharing >60% of its unique words
-// with one already kept is dropped. Applied to Bangla only since the
-// paraphrase-bn model doesn't suppress cross-chunk repetition on its own.
+// with one already kept is dropped. Applied to both languages — the English
+// second-pass reduces but doesn't guarantee zero duplicates across chunks.
 function deduplicateSentences(text: string): string {
   const sentences = text.split(/(?<=[।.!?])\s+/).map((s) => s.trim()).filter(Boolean);
   if (sentences.length <= 1) return text;
@@ -144,9 +144,7 @@ export async function summarizeAction(text: string): Promise<SummarizeResult> {
     if (neededChunking && lang === "en") {
       summary = await runSummarizePass(lang, summary, targetMaxWords, FINAL_MIN_NEW_TOKENS);
     }
-    if (lang === "bn") {
-      summary = deduplicateSentences(summary);
-    }
+    summary = deduplicateSentences(summary);
     summary = trimToWordBudget(summary, targetMaxWords);
 
     if (!summary) {
