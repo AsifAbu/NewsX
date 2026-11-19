@@ -108,9 +108,15 @@ export async function summarizeAction(text: string): Promise<SummarizeResult> {
     : Math.min(MAX_LINES * WORDS_PER_LINE, Math.max(MIN_LINES * WORDS_PER_LINE, Math.round(bodyWords * 0.25)));
 
   try {
-    const passText =
-      bodyWords <= SAFE_WORDS_PER_PASS[lang] ? text : await reduceToSinglePass(lang, text);
+    const neededChunking = bodyWords > SAFE_WORDS_PER_PASS[lang];
+    const passText = neededChunking ? await reduceToSinglePass(lang, text) : text;
     let summary = await runSummarizePass(lang, passText, targetMaxWords, FINAL_MIN_NEW_TOKENS);
+    // Second polish pass: the model re-reads the full concatenated summary so it
+    // can smooth out any rough joins or detached sentences from the chunked reduce.
+    // Only needed when chunks were stitched together — short articles skip it.
+    if (neededChunking) {
+      summary = await runSummarizePass(lang, summary, targetMaxWords, FINAL_MIN_NEW_TOKENS);
+    }
     summary = trimToWordBudget(summary, targetMaxWords);
 
     if (!summary) {

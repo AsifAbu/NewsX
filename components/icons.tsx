@@ -40,6 +40,14 @@ export function UserCircleIcon({ className = "h-6 w-6" }: IconProps) {
   );
 }
 
+export function ChevronDownIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" strokeWidth={2} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+    </svg>
+  );
+}
+
 // Icons below are for components/RichTextEditor.tsx's toolbar.
 
 export function ListBulletIcon({ className = "h-4 w-4" }: IconProps) {

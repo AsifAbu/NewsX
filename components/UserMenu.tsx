@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/lib/actions/auth";
-import { UserCircleIcon } from "@/components/icons";
+import { UserCircleIcon, ChevronDownIcon } from "@/components/icons";
 import SubmitButton from "@/components/SubmitButton";
 
 export default function UserMenu({
@@ -20,12 +20,12 @@ export default function UserMenu({
   const canWrite = role === "MODERATOR" || role === "ADMIN";
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={`Account menu for ${name}`}
+    <div className="relative flex items-center gap-0.5">
+      {/* Avatar/icon navigates directly to the profile page */}
+      <Link
+        href="/profile"
         title={name}
+        aria-label={`Go to profile: ${name}`}
         className="flex items-center text-neutral-600 hover:text-accent"
       >
         {avatarUrl ? (
@@ -34,15 +34,23 @@ export default function UserMenu({
         ) : (
           <UserCircleIcon className="h-7 w-7" />
         )}
+      </Link>
+
+      {/* Chevron button opens the dropdown */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Open account menu"
+        aria-expanded={open}
+        className="text-neutral-400 hover:text-accent"
+      >
+        <ChevronDownIcon className="h-3.5 w-3.5" />
       </button>
 
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-2 w-44 rounded-lg border border-black/10 bg-white py-1 shadow-lg">
-            <Link href="/profile" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-50">
-              Profile
-            </Link>
+          <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-lg border border-black/10 bg-white py-1 shadow-lg">
             <Link href="/bookmarks" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm hover:bg-neutral-50">
               Bookmarks
             </Link>

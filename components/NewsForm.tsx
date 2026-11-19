@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useActionState } from "react";
 import {
   saveDraftAction,
   submitForApprovalAction,
   publishDirectlyAction,
   updateNewsAction,
+  type NewsActionState,
 } from "@/lib/actions/news";
 import { pullArticleAction } from "@/lib/actions/scrape";
 import { rephraseAction } from "@/lib/actions/rephrase";
@@ -84,18 +85,34 @@ export default function NewsForm({
     });
   }
 
-  const draftAction = isEditing ? updateNewsAction.bind(null, newsId!, "DRAFT") : saveDraftAction;
-  const submitAction = isEditing
-    ? updateNewsAction.bind(null, newsId!, "PENDING")
-    : submitForApprovalAction;
-  const publishAction = isEditing
-    ? updateNewsAction.bind(null, newsId!, "PUBLISHED")
-    : publishDirectlyAction;
+  // Wrap each action in useActionState so validation errors are returned to
+  // the client without redirecting — this keeps all controlled state intact.
+  const [draftState, draftFormAction] = useActionState<NewsActionState, FormData>(
+    isEditing
+      ? (prev, fd) => updateNewsAction(newsId!, "DRAFT", prev, fd)
+      : saveDraftAction,
+    undefined
+  );
+  const [submitState, submitFormAction] = useActionState<NewsActionState, FormData>(
+    isEditing
+      ? (prev, fd) => updateNewsAction(newsId!, "PENDING", prev, fd)
+      : submitForApprovalAction,
+    undefined
+  );
+  const [publishState, publishFormAction] = useActionState<NewsActionState, FormData>(
+    isEditing
+      ? (prev, fd) => updateNewsAction(newsId!, "PUBLISHED", prev, fd)
+      : publishDirectlyAction,
+    undefined
+  );
+
+  const displayError =
+    draftState?.error ?? submitState?.error ?? publishState?.error ?? error;
 
   return (
-    <form action={draftAction} className="w-full space-y-4">
+    <form action={draftFormAction} className="w-full space-y-4">
       <h1 className="font-headline text-2xl font-bold">{isEditing ? "Edit News" : "Write News"}</h1>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {displayError && <p className="text-sm text-red-600">{displayError}</p>}
 
       <fieldset className="rounded border border-black/10 p-2">
         <legend className="px-1 text-xs text-neutral-500">Categories (select one or more)</legend>
@@ -205,30 +222,40 @@ export default function NewsForm({
         </p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <SubmitButton
           pendingLabel="Saving..."
+          disabled={isRephrasing}
           className="rounded border border-black/10 px-3 py-2 text-sm hover:border-accent"
         >
           Save Draft
         </SubmitButton>
         <SubmitButton
-          formAction={submitAction}
+          formAction={submitFormAction}
           pendingLabel="Submitting..."
+          disabled={isRephrasing}
           className="rounded bg-accent px-3 py-2 text-sm text-white hover:opacity-90"
         >
           Submit for Approval
         </SubmitButton>
         {isAdmin && (
           <SubmitButton
-            formAction={publishAction}
+            formAction={publishFormAction}
             pendingLabel="Publishing..."
+            disabled={isRephrasing}
             className="rounded bg-black px-3 py-2 text-sm text-white hover:opacity-90"
           >
             Publish
           </SubmitButton>
         )}
       </div>
+      <p className="text-xs text-neutral-500">
+        Drafts are saved to{" "}
+        <a href="/my-submissions" className="text-accent hover:underline">
+          My Submissions
+        </a>
+        .
+      </p>
     </form>
   );
 }

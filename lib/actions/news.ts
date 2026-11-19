@@ -23,13 +23,13 @@ function slugify(title: string) {
 
 export type NewsActionState = { error?: string } | undefined;
 
-async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLISHED") {
+async function saveNews(prevState: NewsActionState, formData: FormData, status: "DRAFT" | "PENDING" | "PUBLISHED"): Promise<NewsActionState> {
   const session = await requireRole(["MODERATOR", "ADMIN"]);
   // Publishing directly is Admin-only — the UI hides the button from
   // Moderators, but the action itself must enforce it too, since it's a
   // plain exported Server Action callable with any status value.
   if (status === "PUBLISHED" && session.user.role !== "ADMIN") {
-    redirect("/post?error=Only Admins can publish directly.");
+    return { error: "Only Admins can publish directly." };
   }
 
   const parsed = newsSchema.safeParse({
@@ -43,7 +43,7 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
     newsSource: formData.get("newsSource") ?? "",
   });
   if (!parsed.success) {
-    redirect(`/post?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input.")}`);
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
   const created = await prisma.news.create({
@@ -69,33 +69,33 @@ async function saveNews(formData: FormData, status: "DRAFT" | "PENDING" | "PUBLI
   redirect(status === "DRAFT" ? "/my-submissions" : "/");
 }
 
-export async function saveDraftAction(formData: FormData) {
-  return saveNews(formData, "DRAFT");
+export async function saveDraftAction(prevState: NewsActionState, formData: FormData) {
+  return saveNews(prevState, formData, "DRAFT");
 }
 
-export async function submitForApprovalAction(formData: FormData) {
-  return saveNews(formData, "PENDING");
+export async function submitForApprovalAction(prevState: NewsActionState, formData: FormData) {
+  return saveNews(prevState, formData, "PENDING");
 }
 
-export async function publishDirectlyAction(formData: FormData) {
-  return saveNews(formData, "PUBLISHED");
+export async function publishDirectlyAction(prevState: NewsActionState, formData: FormData) {
+  return saveNews(prevState, formData, "PUBLISHED");
 }
 
-async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | "PENDING" | "PUBLISHED") {
+async function updateNews(newsId: string, status: "DRAFT" | "PENDING" | "PUBLISHED", prevState: NewsActionState, formData: FormData): Promise<NewsActionState> {
   const session = await requireRole(["MODERATOR", "ADMIN"]);
 
   const existing = await prisma.news.findUnique({ where: { id: newsId } });
   if (!existing) {
-    redirect("/post?error=That article no longer exists.");
+    return { error: "That article no longer exists." };
   }
   // Any Moderator can edit any news (and it always goes back through
   // approval below) — not just their own submissions. Deleted/Hidden stays
   // Admin-only to edit, same as the visibility rule everywhere else.
   if (session.user.role !== "ADMIN" && (existing.status === "DELETED" || existing.status === "HIDDEN")) {
-    redirect("/post?error=That article is no longer available to edit.");
+    return { error: "That article is no longer available to edit." };
   }
   if (status === "PUBLISHED" && session.user.role !== "ADMIN") {
-    redirect(`/post?edit=${newsId}&error=Only Admins can publish directly.`);
+    return { error: "Only Admins can publish directly." };
   }
 
   const parsed = newsSchema.safeParse({
@@ -107,7 +107,7 @@ async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | 
     newsSource: formData.get("newsSource") ?? "",
   });
   if (!parsed.success) {
-    redirect(`/post?edit=${newsId}&error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input.")}`);
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
   await prisma.news.update({
@@ -139,9 +139,10 @@ async function updateNews(newsId: string, formData: FormData, status: "DRAFT" | 
 export async function updateNewsAction(
   newsId: string,
   status: "DRAFT" | "PENDING" | "PUBLISHED",
+  prevState: NewsActionState,
   formData: FormData
 ) {
-  return updateNews(newsId, formData, status);
+  return updateNews(newsId, status, prevState, formData);
 }
 
 export async function approveNewsAction(newsId: string) {
